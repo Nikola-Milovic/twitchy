@@ -1,0 +1,3 @@
+export PGPASSWORD=postgres
+export POSTGRESQL_URL='postgres://postgres:postgres@localhost:5432/twitchy?sslmode=disable'
+migrate -database ${POSTGRESQL_URL} -path db/migrations up/down
