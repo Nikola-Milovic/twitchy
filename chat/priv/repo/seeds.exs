@@ -9,3 +9,9 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+
+# Create the users
+Chat.Repo.insert!(%Chat.Users.User{
+  username: "test_user",
+  id: 1
+})
