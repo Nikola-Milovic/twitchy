@@ -17,6 +17,13 @@ config :chat, ChatWeb.Endpoint,
   pubsub_server: Chat.PubSub,
   live_view: [signing_salt: "VqpB9cdA"]
 
+# TODO add to prod,  get secret from env
+config :joken,
+  hs256: [
+    signer_alg: "HS256",
+    key_octet: "test secret"
+  ]
+
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

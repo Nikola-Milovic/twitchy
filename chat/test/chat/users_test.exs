@@ -10,6 +10,14 @@ defmodule Chat.UsersTest do
 
     @invalid_attrs %{id: nil, username: nil}
 
+    test "user fixture will generate correct jwt" do
+      user = user_fixture()
+      jwt = generate_jwt(user)
+
+      {:ok, claims} = Chat.Token.verify_and_validate(jwt)
+      assert user.id == claims["sub"]
+    end
+
     test "list_users/0 returns all users" do
       user = user_fixture()
       assert Users.list_users() == [user]
