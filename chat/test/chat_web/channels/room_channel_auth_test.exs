@@ -2,9 +2,11 @@ defmodule ChatWeb.RoomChannelAuthTest do
   use ChatWeb.ChannelCase
 
   setup do
+    user = Chat.UsersFixtures.user_fixture()
+
     {:ok, _, socket} =
       ChatWeb.UserSocket
-      |> socket("user_id", %{some: :assign})
+      |> socket("user_id", %{user_id: user.id})
       |> subscribe_and_join(ChatWeb.RoomChannel, "room:lobby")
 
     %{socket: socket}
@@ -26,7 +28,24 @@ defmodule ChatWeb.RoomChannelAuthTest do
   end
 
   test "sending message to a room", %{socket: socket} do
-    push(socket, "send_message", %{"hello" => "all"})
-    assert_broadcast "receive_message", %{"hello" => "all"}
+    push(socket, "send_message", %{"contents" => "hello world", "channel" => "testchannel"})
+
+    assert_broadcast "receive_message", expected_message
+
+    assert expected_message.user_id == socket.assigns[:user_id]
+    assert expected_message.contents == "hello world"
+    assert expected_message.channel == "testchannel"
+
+    saved_message = Chat.Messages.get_message!(expected_message.id)
+
+    assert saved_message.user_id == expected_message.user_id
+    assert saved_message.contents == expected_message.contents
+    assert saved_message.channel == expected_message.channel
+  end
+
+  test "sending invalid message to a room will return error", %{socket: socket} do
+    ref = push(socket, "send_message", %{"contents" => "hello world"})
+
+    assert_reply ref, :error, %{reason: "invalid message format"}
   end
 end

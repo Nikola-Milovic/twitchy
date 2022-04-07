@@ -15,11 +15,26 @@ defmodule Chat.MessagesFixtures do
         contents: "some contents",
         user_id: user.id
       })
+      |> Chat.Messages.create_and_populate_message()
+
+    message
+  end
+  def message_fixture_no_preload(user, attrs \\ %{}) do
+    {:ok, message} =
+      attrs
+      |> Enum.into(%{
+        channel: "some channel",
+        contents: "some contents",
+        user_id: user.id
+      })
       |> Chat.Messages.create_message()
 
     message
   end
 
+
+  @spec message_fixture_with_user(any) ::
+          nil | [%{optional(atom) => any}] | %{optional(atom) => any}
   def message_fixture_with_user(attrs \\ %{}) do
     user = Chat.UsersFixtures.user_fixture()
 
@@ -30,7 +45,7 @@ defmodule Chat.MessagesFixtures do
         contents: "some contents",
         user_id: user.id
       })
-      |> Chat.Messages.create_message()
+      |> Chat.Messages.create_and_populate_message()
 
     message
   end

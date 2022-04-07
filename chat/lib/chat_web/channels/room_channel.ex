@@ -26,16 +26,35 @@ defmodule ChatWeb.RoomChannel do
   end
 
   @impl true
-  def handle_in("send_message", payload, socket) do
+  def handle_in("send_message", %{"channel" => chan, "contents" => conts}, socket) do
     # Check if user is guest
     case Map.get(socket.assigns, :guest, false) do
       true ->
         {:reply, {:error, %{reason: "unauthorized"}}, socket}
 
       false ->
-        broadcast(socket, "receive_message", payload)
+        message = %{
+          "channel" => chan,
+          "contents" => conts,
+          "user_id" => socket.assigns[:user_id]
+        }
+
+        case Chat.Messages.create_and_populate_message(message) do
+          {:ok, message} ->
+            broadcast(socket, "receive_message", message)
+
+          {:error, reason} ->
+            {:reply, {:error, %{reason: reason}}}
+        end
+
         {:noreply, socket}
     end
+  end
+
+  # Invalid message format
+  @impl true
+  def handle_in("send_message", _, socket) do
+    {:reply, {:error, %{reason: "invalid message format"}}, socket}
   end
 
   # # Add authorization logic here as required.

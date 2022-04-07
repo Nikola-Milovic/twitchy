@@ -10,6 +10,6 @@ defmodule Chat.Repo.Migrations.CreateMessages do
       timestamps()
     end
 
-    create unique_index(:messages, [:user_id])
+    create index(:messages, [:user_id])
   end
 end

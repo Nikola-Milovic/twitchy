@@ -11,8 +11,7 @@ defmodule ChatWeb.RoomChannelGuestTest do
   end
 
   test "guests cannot send messages to channels", %{socket: socket} do
-    ref = push(socket, "send_message", %{"hello" => "all"})
+    ref = push(socket, "send_message", %{"contents" => "hello world", "channel" => "testchannel"})
     assert_reply ref, :error, %{reason: "unauthorized"}
   end
-
 end

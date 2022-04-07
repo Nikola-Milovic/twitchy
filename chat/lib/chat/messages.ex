@@ -9,7 +9,7 @@ defmodule Chat.Messages do
   alias Chat.Messages.Message
 
   @doc """
-  Returns the list of messages.
+  Returns the list of messages for user.
 
   ## Examples
 
@@ -17,8 +17,15 @@ defmodule Chat.Messages do
       [%Message{}, ...]
 
   """
-  def list_messages do
-    Repo.all(Message)
+  def list_messages(user_id) do
+    # Create a query
+    query =
+      from m in Message,
+        where: m.user_id == ^user_id,
+        select: m
+
+    # Send the query to the repository
+    Repo.all(query)
   end
 
   @doc """
@@ -35,24 +42,22 @@ defmodule Chat.Messages do
       ** (Ecto.NoResultsError)
 
   """
-  def get_message!(id), do: Repo.get!(Message, id)
+  def get_message!(id), do: Repo.get!(Message, id) |> Repo.preload([:user])
 
-  @doc """
-  Creates a message.
-
-  ## Examples
-
-      iex> create_message(%{field: value})
-      {:ok, %Message{}}
-
-      iex> create_message(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def create_message(attrs \\ %{}) do
+  def create_message(attrs) do
     %Message{}
     |> Message.changeset(attrs)
     |> Repo.insert()
+  end
+
+  def create_and_populate_message(attrs \\ %{}) do
+    case create_message(attrs) do
+      {:ok, message} ->
+        {:ok, message |> Repo.preload([:user])}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @doc """

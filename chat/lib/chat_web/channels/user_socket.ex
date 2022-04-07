@@ -29,7 +29,7 @@ defmodule ChatWeb.UserSocket do
   # performing token verification on connect.
   @impl true
   def connect(%{"token" => token}, socket, _connect_info) do
-    case Chat.Guardian.decode_and_verify(token) do
+    case Chat.Token.verify_and_validate(token) do
       {:ok, claims} ->
         IO.inspect(claims)
         {:ok, socket}
