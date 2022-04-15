@@ -2,7 +2,7 @@ package token
 
 import (
 	"fmt"
-	"nikolamilovic/twitchy/auth/model"
+	"nikolamilovic/twitchy/accounts/model"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -55,7 +55,6 @@ func GenerateTokens(userId int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString(secret)
-
 
 	if err != nil {
 		return "", fmt.Errorf("GenerateTokens: %w", err)

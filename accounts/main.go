@@ -31,10 +31,15 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	dbConn := db.InitDb()
-	ampqConn := ampq.InitAMPQ()
+	dbConn, dbCleanup, err := db.InitDb(ctx)
+	_, ampqCleanup, err := ampq.InitAMPQ()
 
-	shutdowns = append(shutdowns, db.CloseDb(ctx, dbConn), ampqConn.Close)
+	shutdowns = append(shutdowns, dbCleanup, ampqCleanup)
+
+	if err != nil {
+		logger.Fatal("Unable to initialize the app", zap.Error(err))
+		os.Exit(1)
+	}
 
 	srv := api.NewServer(dbConn)
 
