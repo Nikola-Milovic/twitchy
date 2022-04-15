@@ -21,8 +21,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func NewServer() *Server {
-	db := db.InitDb()
+func NewServer(db db.PgxIface) *Server {
 	s := &Server{
 		mux: chi.NewMux(),
 		db:  db,

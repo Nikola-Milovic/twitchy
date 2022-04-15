@@ -21,7 +21,6 @@ func InitDb() PgxIface {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	// defer conn.Close(context.Background())
 
 	err = MigrateDb(os.Getenv("DATABASE_URL"))
 
@@ -32,3 +31,11 @@ func InitDb() PgxIface {
 
 	return conn
 }
+
+func CloseDb(ctx context.Context, db PgxIface) func() error {
+	return func() error {
+		err := db.Close(ctx)
+		return err
+	}
+}
+

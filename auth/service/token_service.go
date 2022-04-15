@@ -95,6 +95,9 @@ func generateTokens(userId int) (string, string, error) {
 		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 5).Unix(),
+			Issuer:    "twitchy", //TODO
+			IssuedAt:  time.Now().Unix(),
+			Subject:   fmt.Sprintf("%d", userId),
 		},
 	}
 
