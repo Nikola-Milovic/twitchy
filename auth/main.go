@@ -1,4 +1,4 @@
-package main
+t statpackage main
 
 import (
 	"context"
