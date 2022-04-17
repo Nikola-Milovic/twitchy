@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"net/http"
-	"nikolamilovic/twitchy/accounts/ampq"
+	"nikolamilovic/twitchy/auth/ampq"
 	"nikolamilovic/twitchy/auth/api"
 	"nikolamilovic/twitchy/auth/db"
 	"os"
@@ -30,17 +30,22 @@ func main() {
 	os.Setenv("DATABASE_URL", "postgres://postgres:postgres@172.28.0.1:5432/auth-db?sslmode=disable")
 	os.Setenv("AMQP_SERVER_URL", "amqp://172.27.0.1:5672/")
 
-	dbConn := db.InitDb()
-	ampqConn := ampq.InitAMPQ()
+	dbConn, dbCleanup, err := db.InitDb(ctx)
+	ampq, ampqCleanup, err := ampq.InitAMPQ()
+	srv, err := api.NewServer(dbConn, ampq)
 
-	shutdowns = append(shutdowns, db.CloseDb(ctx, dbConn), ampqConn.Close)
-
-	srv := api.NewServer(dbConn)
+	if err != nil {
+		logger.Fatal("Unable to initialize the app", zap.Error(err))
+		os.Exit(1)
+	}
 
 	server := http.Server{
 		Addr:    ":4003",
 		Handler: srv,
 	}
+
+	shutdowns = append(shutdowns, dbCleanup, ampqCleanup)
+
 	go gracefulShutdown(&server, shutdown, ctx)
 
 	logger.Info("server starting: http://localhost" + server.Addr)

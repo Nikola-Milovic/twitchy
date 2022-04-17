@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"nikolamilovic/twitchy/auth/model"
-	mymock "nikolamilovic/twitchy/auth/service/mock"
+	emitterMock "nikolamilovic/twitchy/auth/emitter/mock"
+	serviceMock "nikolamilovic/twitchy/auth/service/mock"
 	"testing"
 
 	"github.com/pashagolub/pgxmock"
@@ -19,7 +20,8 @@ func TestRegistration(t *testing.T) {
 
 	sut := &AuthService{
 		DB:           mock,
-		TokenService: &mymock.TokenServiceMock{},
+		TokenService: &serviceMock.TokenServiceMock{},
+		Emitter:      &emitterMock.AccountEmitterMock{},
 	}
 
 	// before we actually execute our api function, we need to expect required DB actions

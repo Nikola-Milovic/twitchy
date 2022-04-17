@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"nikolamilovic/twitchy/auth/db"
+	"nikolamilovic/twitchy/auth/emitter"
 	"nikolamilovic/twitchy/auth/model"
 
 	"golang.org/x/crypto/bcrypt"
@@ -17,6 +18,7 @@ type IAuthService interface {
 type AuthService struct {
 	DB           db.PgxIface
 	TokenService ITokenService
+	Emitter      emitter.IAccountEmitter
 }
 
 func hashPassword(password string) (string, error) {
@@ -115,5 +117,16 @@ func (s *AuthService) createUser(email, password string) (int, error) {
 	if rows.Next() {
 		rows.Scan(&id)
 	}
+
+	//TODO add events to a workbox in DB to be eventually emitted
+	// currently this poses an issue if the event emittion fails but we successfuly created a user
+	// so the user and event should be saved to the DB in a transaction
+	err = s.Emitter.Emit(model.AccountCreatedEvent{Id: id})
+
+	if err != nil {
+		fmt.Printf("Error emitting account created event %s", err.Error())
+		return -1, err
+	}
+
 	return id, nil
 }
