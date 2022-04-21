@@ -1,4 +1,4 @@
-t statpackage main
+package main
 
 import (
 	"context"
@@ -27,11 +27,14 @@ func main() {
 	)
 	rand.Seed(time.Now().UnixNano())
 
-	os.Setenv("DATABASE_URL", "postgres://postgres:postgres@172.28.0.1:5432/auth-db?sslmode=disable")
-	os.Setenv("AMQP_SERVER_URL", "amqp://172.27.0.1:5672/")
-
 	dbConn, dbCleanup, err := db.InitDb(ctx)
+	if err != nil {
+		logger.Fatal("failed to init db", zap.Error(err))
+	}
 	ampq, ampqCleanup, err := ampq.InitAMPQ()
+	if err != nil {
+		logger.Fatal("failed to init ampq", zap.Error(err))
+	}
 	srv, err := api.NewServer(dbConn, ampq)
 
 	if err != nil {

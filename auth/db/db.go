@@ -16,13 +16,27 @@ type PgxIface interface {
 }
 
 func InitDb(ctx context.Context) (PgxIface, func() error, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_HOST"),
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_DB"))
+
+	fmt.Println(os.Getenv("POSTGRES_USER"))
+	fmt.Println(os.Getenv("POSTGRES_PASSWORD"))
+	fmt.Println(os.Getenv("POSTGRES_HOST"))
+	fmt.Println(os.Getenv("POSTGRES_PORT"))
+	fmt.Println(os.Getenv("POSTGRES_DB"))
+	fmt.Println(dbUrl)
+
+	conn, err := pgx.Connect(context.Background(), dbUrl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		return nil, nil, err
 	}
 
-	err = MigrateDb(os.Getenv("DATABASE_URL"))
+	err = MigrateDb(dbUrl)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to migrate the: %v\n", err)
