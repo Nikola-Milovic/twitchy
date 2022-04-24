@@ -1,4 +1,62 @@
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
+apiVersion: v1
+kind: Service
 metadata:
-    name: rabbitmq
+  name: rabbitmq
+spec:
+  ports:
+    - name: http
+      port: 15672
+      protocol: TCP
+      targetPort: 15672
+    - name: amqp
+      port: 5672
+      protocol: TCP
+      targetPort: 5672
+  selector:
+    run: rabbitmq
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: rabbitmq
+  name: rabbitmq
+spec:
+  containers:
+    - image: rabbitmq:management
+      name: rabbitmq
+      ports:
+        - name: http
+          protocol: TCP
+          containerPort: 15672
+        - name: amqp
+          protocol: TCP
+          containerPort: 5672
+      livenessProbe:
+        exec:
+          # This is just an example. There is no "one true health check" but rather
+          # several rabbitmq-diagnostics commands that can be combined to form increasingly comprehensive
+          # and intrusive health checks.
+          # Learn more at https://www.rabbitmq.com/monitoring.html#health-checks.
+          #
+          # Stage 2 check:
+          command: ["rabbitmq-diagnostics", "status"]
+        initialDelaySeconds:
+          60
+          # See https://www.rabbitmq.com/monitoring.html for monitoring frequency recommendations.
+        periodSeconds: 60
+        timeoutSeconds: 15
+      readinessProbe:
+        exec:
+          # This is just an example. There is no "one true health check" but rather
+          # several rabbitmq-diagnostics commands that can be combined to form increasingly comprehensive
+          # and intrusive health checks.
+          # Learn more at https://www.rabbitmq.com/monitoring.html#health-checks.
+          #
+          # Stage 1 check:
+          command: ["rabbitmq-diagnostics", "ping"]
+        initialDelaySeconds: 20
+        periodSeconds: 60
+        timeoutSeconds: 10
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always

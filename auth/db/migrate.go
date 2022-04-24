@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -12,7 +13,7 @@ import (
 
 func MigrateDb(dburl string) error {
 	m, err := migrate.New(
-		"file://db/migrations",
+		"file:///"+os.Getenv("MIGRATION_PATH"),
 		dburl,
 	)
 	if err != nil {

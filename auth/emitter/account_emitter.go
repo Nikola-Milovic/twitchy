@@ -2,6 +2,7 @@ package emitter
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"nikolamilovic/twitchy/auth/model"
 
@@ -63,6 +64,10 @@ func (e *AccountEmitter) Emit(event model.AccountCreatedEvent) error {
 func NewAccountEmitter(conn *amqp.Connection) (IAccountEmitter, error) {
 	emitter := AccountEmitter{
 		connection: conn,
+	}
+
+	if conn.IsClosed() {
+		return nil, fmt.Errorf("connection is closed")
 	}
 
 	err := emitter.setup()

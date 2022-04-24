@@ -51,6 +51,6 @@ func NewServer(db db.PgxIface, ampq *ampq.Connection) (*Server, error) {
 	h := handler.NewAuthHandler(s.validator, authService, tokenService)
 	h.Routes()
 
-	s.mux.Mount("/api/auth", h)
+	s.mux.Mount("/v1/auth", h)
 	return s, nil
 }

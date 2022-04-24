@@ -12,4 +12,10 @@ FROM alpine:edge
 
 COPY --from=build /tmp/auth /sbin/auth
 
+RUN mkdir -p /sbin/db/migrations
+
+COPY --from=build /src/db/migrations /sbin/db/migrations
+
+EXPOSE $PORT
+
 CMD /sbin/auth

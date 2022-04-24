@@ -1,60 +1,96 @@
 version: "3.2"
 services:
-  
-
-  
+  ingress:
+    image: jwilder/nginx-proxy
+    ports:
+      - "3000:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+  auth-service:
+    depends_on:
+      - rabbitmq
+      - auth-db
+      - ingress
+    build: ./auth
+    container_name: "auth-service"
+    ports:
+      - 3001:3000
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=auth-db
+      - POSTGRES_DB=auth-dev
+      - POSTGRES_PORT=5432
+      - PORT=3000
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - VIRTUAL_HOST=api.twitchy.dev
+      - VIRTUAL_PATH=/v1/auth/
+      - MIGRATION_PATH=sbin/db/migrations
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    networks:
+      - rabbitmq_net
+      - default
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: 'rabbitmq'
+    container_name: "rabbitmq"
     ports:
-        - 5672:5672
-        - 15672:15672
-    # volumes:
-    #     - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
-    #     - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_log:/var/log/rabbitmq/
     networks:
-        - rabbitmq_go_net
+      - rabbitmq_net
   accounts-db:
     image: postgres:14.1-alpine
     restart: always
-    container_name: "twitchy-accounts-postgres"
+    container_name: "accounts-db"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=accounts-db
-    ports:
-      - '5433:5432'
-    volumes: 
-      - db:/var/lib/postgresql/data
+      - POSTGRES_DB=accounts-dev
+    volumes:
+      - accounts_db_volume:/var/lib/postgresql/data
   auth-db:
+    command: postgres -c listen_addresses='*'
     image: postgres:14.1-alpine
     restart: always
-    container_name: "twitchy-auth-postgres"
+    container_name: "auth-db"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=auth-db
-    ports:
-      - '5432:5432'
-    volumes: 
-      - db:/var/lib/postgresql/data
+      - POSTGRES_DB=auth-dev
+    volumes:
+      - auth_db_volume:/var/lib/postgresql/data
   chat-db:
     image: postgres:14.1-alpine
     restart: always
-    container_name: "twitchy-chat-postgres"
+    container_name: "chat-db"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=chat-dev
-    ports:
-      - '5434:5432'
-    volumes: 
-      - db:/var/lib/postgresql/data
+    volumes:
+      - chat_db_volume:/var/lib/postgresql/data
 
 networks:
-  rabbitmq_go_net:
+  rabbitmq_net:
     driver: bridge
 
 volumes:
-  db:
+  accounts_db_volume:
     driver: local
+  auth_db_volume:
+    driver: local
+  chat_db_volume:
+    driver: local
+  rabbitmq_data:
+  rabbitmq_log:

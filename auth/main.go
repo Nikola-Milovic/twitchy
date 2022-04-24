@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"nikolamilovic/twitchy/auth/ampq"
@@ -42,8 +43,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	port := fmt.Sprintf(":%s", os.Getenv("PORT"))
 	server := http.Server{
-		Addr:    ":4003",
+		Addr:    port,
 		Handler: srv,
 	}
 
@@ -51,7 +53,7 @@ func main() {
 
 	go gracefulShutdown(&server, shutdown, ctx)
 
-	logger.Info("server starting: http://localhost" + server.Addr)
+	logger.Info("Server starting and listening at port " + server.Addr)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		logger.Fatal("server error", zap.Error(err))
 	}

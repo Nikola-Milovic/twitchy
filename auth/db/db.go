@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -23,16 +24,33 @@ func InitDb(ctx context.Context) (PgxIface, func() error, error) {
 		os.Getenv("POSTGRES_PORT"),
 		os.Getenv("POSTGRES_DB"))
 
-	fmt.Println(os.Getenv("POSTGRES_USER"))
-	fmt.Println(os.Getenv("POSTGRES_PASSWORD"))
-	fmt.Println(os.Getenv("POSTGRES_HOST"))
-	fmt.Println(os.Getenv("POSTGRES_PORT"))
-	fmt.Println(os.Getenv("POSTGRES_DB"))
+	// fmt.Println(os.Getenv("POSTGRES_USER"))
+	// fmt.Println(os.Getenv("POSTGRES_PASSWORD"))
+	// fmt.Println(os.Getenv("POSTGRES_HOST"))
+	// fmt.Println(os.Getenv("POSTGRES_PORT"))
+	// fmt.Println(os.Getenv("POSTGRES_DB"))
 	fmt.Println(dbUrl)
 
 	conn, err := pgx.Connect(context.Background(), dbUrl)
+
+	maxAttempts := 20
+	for attempts := 1; attempts <= maxAttempts; attempts++ {
+		if err == nil {
+			break
+		} else {
+			if conn != nil {
+				err = conn.Ping(ctx)
+			} else {
+				conn, err = pgx.Connect(context.Background(), dbUrl)
+			}
+		}
+
+		fmt.Println("Retrying connection to database...")
+		fmt.Println(err)
+		time.Sleep(time.Duration(attempts) * time.Second)
+	}
+
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		return nil, nil, err
 	}
 

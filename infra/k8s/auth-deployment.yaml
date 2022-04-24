@@ -19,16 +19,25 @@ spec:
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_PASSWORD
-              valueFrom: 
-                secretKeyRef:
-                  name: postgres-secret-config
-                  key: PASSWORD
+              value: postgres
+              # valueFrom: 
+              #   secretKeyRef:
+              #     name: postgres-secret-config
+              #     key: PASSWORD
             - name: POSTGRES_DB
-              value: auth-db
+              value: auth-dev
             - name: POSTGRES_PORT
-              value: '3306'
+              value: '5435'
             - name: POSTGRES_HOST
-              value: auth-db-srv
+              value: localhost
+            - name: RABBITMQ_USER
+              value: guest
+            - name: RABBITMQ_PASS
+              value: guest
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: '5672'
 ---
 apiVersion: v1
 kind: Service
