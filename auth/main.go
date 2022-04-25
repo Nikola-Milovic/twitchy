@@ -28,18 +28,18 @@ func main() {
 	)
 	rand.Seed(time.Now().UnixNano())
 
-	dbConn, dbCleanup, err := db.InitDb(ctx)
+	dbConn, dbCleanup, err := db.InitDb(ctx, logger.Sugar().Named("db"))
 	if err != nil {
-		logger.Fatal("failed to init db", zap.Error(err))
+		logger.Fatal("failed to init the db", zap.Error(err))
 	}
-	ampq, ampqCleanup, err := ampq.InitAMPQ()
+	ampq, ampqCleanup, err := ampq.InitAMPQ(logger.Sugar().Named("ampq"))
 	if err != nil {
-		logger.Fatal("failed to init ampq", zap.Error(err))
+		logger.Fatal("failed to connect to", zap.Error(err))
 	}
 	srv, err := api.NewServer(dbConn, ampq)
 
 	if err != nil {
-		logger.Fatal("Unable to initialize the app", zap.Error(err))
+		logger.Fatal("Unable to initialize the server", zap.Error(err))
 		os.Exit(1)
 	}
 
@@ -50,6 +50,8 @@ func main() {
 	}
 
 	shutdowns = append(shutdowns, dbCleanup, ampqCleanup)
+
+	defer logger.Sync()
 
 	go gracefulShutdown(&server, shutdown, ctx)
 

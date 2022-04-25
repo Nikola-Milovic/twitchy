@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 )
 
 type PgxIface interface {
@@ -16,7 +17,7 @@ type PgxIface interface {
 	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 }
 
-func InitDb(ctx context.Context) (PgxIface, func() error, error) {
+func InitDb(ctx context.Context, logger *zap.SugaredLogger) (PgxIface, func() error, error) {
 	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),

@@ -1,16 +1,12 @@
 version: "3.2"
 services:
-  ingress:
+  nginx:
     image: jwilder/nginx-proxy
     ports:
       - "3000:80"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
   auth-service:
-    depends_on:
-      - rabbitmq
-      - auth-db
-      - ingress
     build: ./auth
     container_name: "auth-service"
     ports:
@@ -64,6 +60,8 @@ services:
     image: postgres:14.1-alpine
     restart: always
     container_name: "auth-db"
+    ports: 
+      - "5435:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
