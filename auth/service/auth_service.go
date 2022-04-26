@@ -11,6 +11,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// NOTE: we could and probably should decouple the DB logic from service and have a repository layer as well, but adding
+// another layer on top of this simple example is just a bit overkill for the time being.
+
 type IAuthService interface {
 	Register(email, password string) (string, string, int, error)
 	Login(email, password string) (string, string, int, error)
@@ -33,14 +36,30 @@ func checkPasswordHash(password, hash string) bool {
 }
 
 //Return JWT, refresh token and the user ID
-func (a *AuthService) Register(email, password string) (string, string, int, error) {
-	id, err := a.createUser(email, password)
+func (s *AuthService) Register(email, password string) (string, string, int, error) {
+	id, err := s.createUser(email, password)
 
 	if err != nil {
 		return "", "", -1, fmt.Errorf("Register create user %w", err)
 	}
 
-	jwt, refresh, err := a.TokenService.GenerateNewTokensForUser(id)
+	//TODO add events to a workbox in DB to be eventually emitted
+	// currently this poses an issue if the event emittion fails but we successfuly created a user
+	// so the user and event should be saved to the DB in a transaction
+	data, err := json.Marshal(model.AccountCreatedEvent{Id: id})
+
+	if err != nil {
+		return "", "", -1, err
+	}
+
+	err = s.RabbitClient.Push(data)
+
+	if err != nil {
+		fmt.Printf("Error emitting account created event %s", err.Error())
+		return "", " ", -1, err
+	}
+
+	jwt, refresh, err := s.TokenService.GenerateNewTokensForUser(id)
 
 	if err != nil {
 		return "", "", -1, fmt.Errorf("Register generate tokens %w", err)
@@ -117,22 +136,6 @@ func (s *AuthService) createUser(email, password string) (int, error) {
 	var id = -1
 	if rows.Next() {
 		rows.Scan(&id)
-	}
-
-	//TODO add events to a workbox in DB to be eventually emitted
-	// currently this poses an issue if the event emittion fails but we successfuly created a user
-	// so the user and event should be saved to the DB in a transaction
-	data, err := json.Marshal(model.AccountCreatedEvent{Id: id})
-
-	if err != nil {
-		return 0, err
-	}
-
-	err = s.RabbitClient.Push(data)
-
-	if err != nil {
-		fmt.Printf("Error emitting account created event %s", err.Error())
-		return -1, err
 	}
 
 	return id, nil

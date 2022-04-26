@@ -44,7 +44,7 @@ func main() {
 		os.Getenv("RABBITMQ_PORT"),
 	)
 
-	client := client.New("", "accounts.created", amqpServerURL, logger.Sugar().Named("rabbitmq"), sigint)
+	client := client.New("account_created_confirmation_queue", "account_created_queue", "accounts_exchange", amqpServerURL, logger.Sugar().Named("rabbitmq"), sigint)
 
 	srv, err := api.NewServer(dbConn, client)
 

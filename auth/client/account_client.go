@@ -14,12 +14,13 @@ import (
 	"go.uber.org/zap"
 )
 
+//https://www.ribice.ba/golang-rabbitmq-client/
 var (
 	ErrDisconnected = errors.New("disconnected from rabbitmq, trying to reconnect")
 )
 
 type RabbitClient interface {
-    Push(data []byte) error 
+	Push(data []byte) error
 }
 
 const (
@@ -34,6 +35,7 @@ const (
 type Client struct {
 	pushQueue     string
 	streamQueue   string
+	exchange      string
 	logger        *zap.SugaredLogger
 	connection    *amqp.Connection
 	channel       *amqp.Channel
@@ -47,7 +49,7 @@ type Client struct {
 }
 
 // New is a constructor that takes address, push and listen queue names, logger, and a channel that will notify rabbitmq client on server shutdown. We calculate the number of threads, create the client, and start the connection process. Connect method connects to the rabbitmq server and creates push/listen channels if they don't exist.
-func New(streamQueue, pushQueue, addr string, l *zap.SugaredLogger, done chan os.Signal) *Client {
+func New(streamQueue, pushQueue, exchange, addr string, l *zap.SugaredLogger, done chan os.Signal) *Client {
 	threads := runtime.GOMAXPROCS(0)
 	if numCPU := runtime.NumCPU(); numCPU > threads {
 		threads = numCPU
@@ -57,6 +59,7 @@ func New(streamQueue, pushQueue, addr string, l *zap.SugaredLogger, done chan os
 		logger:      l,
 		threads:     threads,
 		pushQueue:   pushQueue,
+		exchange:    exchange,
 		streamQueue: streamQueue,
 		done:        done,
 		alive:       true,
@@ -109,6 +112,14 @@ func (c *Client) connect(addr string) bool {
 		c.logger.Errorf("failed connecting to channel: %v", err)
 		return false
 	}
+
+	err = ch.ExchangeDeclare(c.exchange, "topic", true, false, false, false, nil)
+
+	if err != nil {
+		c.logger.Errorf("failed to declare exchange: %v", err)
+		return false
+	}
+
 	ch.Confirm(false)
 	_, err = ch.QueueDeclare(
 		c.streamQueue,
@@ -135,6 +146,19 @@ func (c *Client) connect(addr string) bool {
 		c.logger.Errorf("failed to declare push queue: %v", err)
 		return false
 	}
+
+	err = ch.QueueBind(c.pushQueue, "", c.exchange, true, nil)
+	if err != nil {
+		c.logger.Errorf("failed to bind push queue: %v", err)
+		return false
+	}
+	err = ch.QueueBind(c.streamQueue, "", c.exchange, true, nil)
+
+	if err != nil {
+		c.logger.Errorf("failed to bind stream queue: %v", err)
+		return false
+	}
+
 	c.changeConnection(conn, ch)
 	c.isConnected = true
 	return true
@@ -187,8 +211,9 @@ func (c *Client) UnsafePush(data []byte) error {
 	if !c.isConnected {
 		return ErrDisconnected
 	}
+
 	return c.channel.Publish(
-		"",          // Exchange
+		c.exchange,  // Exchange
 		c.pushQueue, // Routing key
 		false,       // Mandatory
 		false,       // Immediate
