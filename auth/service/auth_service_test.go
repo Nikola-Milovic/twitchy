@@ -2,26 +2,33 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	clientMock "nikolamilovic/twitchy/auth/client/mock"
 	"nikolamilovic/twitchy/auth/model"
-	emitterMock "nikolamilovic/twitchy/auth/emitter/mock"
 	serviceMock "nikolamilovic/twitchy/auth/service/mock"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/pashagolub/pgxmock"
 )
 
 func TestRegistration(t *testing.T) {
+	// Setup
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+
 	mock, err := pgxmock.NewConn()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer mock.Close(context.Background())
 
+	clientMock := clientMock.NewMockRabbitClient(ctl)
 	sut := &AuthService{
 		DB:           mock,
 		TokenService: &serviceMock.TokenServiceMock{},
-		Emitter:      &emitterMock.AccountEmitterMock{},
+		RabbitClient: clientMock,
 	}
 
 	// before we actually execute our api function, we need to expect required DB actions
@@ -29,8 +36,14 @@ func TestRegistration(t *testing.T) {
 
 	mock.ExpectQuery("INSERT INTO users").WillReturnRows(rows)
 
+	expectedEvent, _ := json.Marshal(model.AccountCreatedEvent{Id: 1})
+
+	clientMock.EXPECT().Push(expectedEvent).Return(nil)
+
+	//WHEN
 	jwt, refresh, id, err := sut.Register("test@gmail.com", "123qwe")
 
+	//SHOULD
 	if jwt != "JWT" {
 		t.Fatalf("Expected jwt to be %s got %s", "JWT", jwt)
 	}
@@ -46,6 +59,7 @@ func TestRegistration(t *testing.T) {
 	if id != 1 {
 		t.Fatalf("Expected id to be %d got %d", 1, id)
 	}
+
 }
 
 func TestLoginCheck(t *testing.T) {

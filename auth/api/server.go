@@ -3,14 +3,12 @@ package api
 import (
 	"net/http"
 	"nikolamilovic/twitchy/auth/api/handler"
+	"nikolamilovic/twitchy/auth/client"
 	"nikolamilovic/twitchy/auth/db"
-	"nikolamilovic/twitchy/auth/emitter"
 	"nikolamilovic/twitchy/auth/service"
 
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
-
-	ampq "github.com/rabbitmq/amqp091-go"
 )
 
 type Server struct {
@@ -24,7 +22,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func NewServer(db db.PgxIface, ampq *ampq.Connection) (*Server, error) {
+func NewServer(db db.PgxIface, client *client.Client) (*Server, error) {
 	s := &Server{
 		mux: chi.NewMux(),
 		db:  db,
@@ -35,16 +33,10 @@ func NewServer(db db.PgxIface, ampq *ampq.Connection) (*Server, error) {
 		DB: s.db,
 	}
 
-	emitter, err := emitter.NewAccountEmitter(ampq)
-
-	if err != nil {
-		return nil, err
-	}
-
 	authService := &service.AuthService{
 		DB:           s.db,
 		TokenService: tokenService,
-		Emitter:      emitter,
+		RabbitClient: client,
 	}
 
 	//Routing

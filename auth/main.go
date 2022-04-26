@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"nikolamilovic/twitchy/auth/ampq"
 	"nikolamilovic/twitchy/auth/api"
+	"nikolamilovic/twitchy/auth/client"
 	"nikolamilovic/twitchy/auth/db"
 	"os"
 	"os/signal"
@@ -25,6 +25,7 @@ func main() {
 	var (
 		shutdown = make(chan struct{})
 		ctx      = context.Background()
+		sigint   = make(chan os.Signal, 1)
 	)
 	rand.Seed(time.Now().UnixNano())
 
@@ -32,11 +33,20 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to init the db", zap.Error(err))
 	}
-	ampq, ampqCleanup, err := ampq.InitAMPQ(logger.Sugar().Named("ampq"))
-	if err != nil {
-		logger.Fatal("failed to connect to", zap.Error(err))
-	}
-	srv, err := api.NewServer(dbConn, ampq)
+	// ampq, ampqCleanup, err := ampq.InitAMPQ(logger.Sugar().Named("ampq"))
+	// if err != nil {
+	// 	logger.Fatal("failed to connect to", zap.Error(err))
+	// }
+	amqpServerURL := fmt.Sprintf("amqp://%s:%s@%s:%s/",
+		os.Getenv("RABBITMQ_USER"),
+		os.Getenv("RABBITMQ_PASSWORD"),
+		os.Getenv("RABBITMQ_HOST"),
+		os.Getenv("RABBITMQ_PORT"),
+	)
+
+	client := client.New("", "accounts.created", amqpServerURL, logger.Sugar().Named("rabbitmq"), sigint)
+
+	srv, err := api.NewServer(dbConn, client)
 
 	if err != nil {
 		logger.Fatal("Unable to initialize the server", zap.Error(err))
@@ -49,11 +59,11 @@ func main() {
 		Handler: srv,
 	}
 
-	shutdowns = append(shutdowns, dbCleanup, ampqCleanup)
+	shutdowns = append(shutdowns, dbCleanup)
 
 	defer logger.Sync()
 
-	go gracefulShutdown(&server, shutdown, ctx)
+	go gracefulShutdown(&server, shutdown, ctx, sigint)
 
 	logger.Info("Server starting and listening at port " + server.Addr)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
@@ -61,11 +71,7 @@ func main() {
 	}
 }
 
-func gracefulShutdown(server *http.Server, shutdown chan struct{}, ctx context.Context) {
-	var (
-		sigint = make(chan os.Signal, 1)
-	)
-
+func gracefulShutdown(server *http.Server, shutdown chan struct{}, ctx context.Context, sigint chan os.Signal) {
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 	<-sigint
 
