@@ -22,7 +22,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func NewServer(db db.PgxIface, client *client.Client) (*Server, error) {
+func NewServer(db db.PgxIface, client *client.AccountClient) (*Server, error) {
 	s := &Server{
 		mux: chi.NewMux(),
 		db:  db,
@@ -36,7 +36,7 @@ func NewServer(db db.PgxIface, client *client.Client) (*Server, error) {
 	authService := &service.AuthService{
 		DB:           s.db,
 		TokenService: tokenService,
-		RabbitClient: client,
+		AccountRabbitClient: client,
 	}
 
 	//Routing

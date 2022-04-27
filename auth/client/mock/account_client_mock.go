@@ -2,47 +2,48 @@
 // Source: ./account_client.go
 
 // Package mock_client is a generated GoMock package.
-package mock
+package mock_client
 
 import (
-        reflect "reflect"
+	event "nikolamilovic/twitchy/auth/model/event"
+	reflect "reflect"
 
-        gomock "github.com/golang/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockRabbitClient is a mock of RabbitClient interface.
-type MockRabbitClient struct {
+// MockIAccountClient is a mock of IAccountClient interface.
+type MockIAccountClient struct {
         ctrl     *gomock.Controller
-        recorder *MockRabbitClientMockRecorder
+        recorder *MockIAccountClientMockRecorder
 }
 
-// MockRabbitClientMockRecorder is the mock recorder for MockRabbitClient.
-type MockRabbitClientMockRecorder struct {
-        mock *MockRabbitClient
+// MockIAccountClientMockRecorder is the mock recorder for MockIAccountClient.
+type MockIAccountClientMockRecorder struct {
+        mock *MockIAccountClient
 }
 
-// NewMockRabbitClient creates a new mock instance.
-func NewMockRabbitClient(ctrl *gomock.Controller) *MockRabbitClient {
-        mock := &MockRabbitClient{ctrl: ctrl}
-        mock.recorder = &MockRabbitClientMockRecorder{mock}
+// NewMockIAccountClient creates a new mock instance.
+func NewMockIAccountClient(ctrl *gomock.Controller) *MockIAccountClient {
+        mock := &MockIAccountClient{ctrl: ctrl}
+        mock.recorder = &MockIAccountClientMockRecorder{mock}
         return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockRabbitClient) EXPECT() *MockRabbitClientMockRecorder {
+func (m *MockIAccountClient) EXPECT() *MockIAccountClientMockRecorder {
         return m.recorder
 }
 
-// Push mocks base method.
-func (m *MockRabbitClient) Push(data []byte) error {
+// PublishAccountCreatedEvent mocks base method.
+func (m *MockIAccountClient) PublishAccountCreatedEvent(event event.AccountCreatedEvent) error {
         m.ctrl.T.Helper()
-        ret := m.ctrl.Call(m, "Push", data)
+        ret := m.ctrl.Call(m, "PublishAccountCreatedEvent", event)
         ret0, _ := ret[0].(error)
         return ret0
 }
 
-// Push indicates an expected call of Push.
-func (mr *MockRabbitClientMockRecorder) Push(data interface{}) *gomock.Call {
+// PublishAccountCreatedEvent indicates an expected call of PublishAccountCreatedEvent.
+func (mr *MockIAccountClientMockRecorder) PublishAccountCreatedEvent(event interface{}) *gomock.Call {
         mr.mock.ctrl.T.Helper()
-        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockRabbitClient)(nil).Push), data)
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishAccountCreatedEvent", reflect.TypeOf((*MockIAccountClient)(nil).PublishAccountCreatedEvent), event)
 }

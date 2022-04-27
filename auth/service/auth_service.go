@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"nikolamilovic/twitchy/auth/client"
 	"nikolamilovic/twitchy/auth/db"
 	"nikolamilovic/twitchy/auth/model"
+	"nikolamilovic/twitchy/auth/model/event"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,9 +20,9 @@ type IAuthService interface {
 }
 
 type AuthService struct {
-	DB           db.PgxIface
-	TokenService ITokenService
-	RabbitClient client.RabbitClient
+	DB                  db.PgxIface
+	TokenService        ITokenService
+	AccountRabbitClient client.IAccountClient
 }
 
 func hashPassword(password string) (string, error) {
@@ -46,13 +46,8 @@ func (s *AuthService) Register(email, password string) (string, string, int, err
 	//TODO add events to a workbox in DB to be eventually emitted
 	// currently this poses an issue if the event emittion fails but we successfuly created a user
 	// so the user and event should be saved to the DB in a transaction
-	data, err := json.Marshal(model.AccountCreatedEvent{Id: id})
 
-	if err != nil {
-		return "", "", -1, err
-	}
-
-	err = s.RabbitClient.Push(data)
+	err = s.AccountRabbitClient.PublishAccountCreatedEvent(event.AccountCreatedEvent{Id: id})
 
 	if err != nil {
 		fmt.Printf("Error emitting account created event %s", err.Error())

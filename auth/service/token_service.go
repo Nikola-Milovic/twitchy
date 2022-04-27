@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+//TODO
 var secret = []byte("test secret")
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 

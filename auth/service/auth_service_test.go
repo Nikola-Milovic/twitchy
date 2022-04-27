@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	clientMock "nikolamilovic/twitchy/auth/client/mock"
 	"nikolamilovic/twitchy/auth/model"
+	"nikolamilovic/twitchy/auth/model/event"
 	serviceMock "nikolamilovic/twitchy/auth/service/mock"
 	"testing"
 
@@ -24,11 +24,11 @@ func TestRegistration(t *testing.T) {
 	}
 	defer mock.Close(context.Background())
 
-	clientMock := clientMock.NewMockRabbitClient(ctl)
+	clientMock := clientMock.NewMockIAccountClient(ctl)
 	sut := &AuthService{
-		DB:           mock,
-		TokenService: &serviceMock.TokenServiceMock{},
-		RabbitClient: clientMock,
+		DB:                  mock,
+		TokenService:        &serviceMock.TokenServiceMock{},
+		AccountRabbitClient: clientMock,
 	}
 
 	// before we actually execute our api function, we need to expect required DB actions
@@ -36,9 +36,7 @@ func TestRegistration(t *testing.T) {
 
 	mock.ExpectQuery("INSERT INTO users").WillReturnRows(rows)
 
-	expectedEvent, _ := json.Marshal(model.AccountCreatedEvent{Id: 1})
-
-	clientMock.EXPECT().Push(expectedEvent).Return(nil)
+	clientMock.EXPECT().PublishAccountCreatedEvent(event.AccountCreatedEvent{Id: 1}).Return(nil)
 
 	//WHEN
 	jwt, refresh, id, err := sut.Register("test@gmail.com", "123qwe")

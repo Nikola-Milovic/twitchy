@@ -44,7 +44,8 @@ func main() {
 		os.Getenv("RABBITMQ_PORT"),
 	)
 
-	client := client.New("account_created_confirmation_queue", "account_created_queue", "accounts_exchange", amqpServerURL, logger.Sugar().Named("rabbitmq"), sigint)
+	clientConnection := client.NewClientConnection(logger.Sugar().Named("client_connection"), sigint)
+	client := client.New(amqpServerURL, logger.Sugar().Named("accounts_rabbitmq_client"), clientConnection)
 
 	srv, err := api.NewServer(dbConn, client)
 
@@ -59,7 +60,7 @@ func main() {
 		Handler: srv,
 	}
 
-	shutdowns = append(shutdowns, dbCleanup)
+	shutdowns = append(shutdowns, dbCleanup, client.Close)
 
 	defer logger.Sync()
 
