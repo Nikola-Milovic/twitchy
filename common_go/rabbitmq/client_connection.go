@@ -28,7 +28,6 @@ type ClientConnection struct {
 
 // NewClientConnection creates a new ClientConnection
 func NewClientConnection(logger *zap.SugaredLogger, done chan os.Signal) *ClientConnection {
-
 	return &ClientConnection{
 		logger: logger,
 		Done:   done,

@@ -1,8 +1,6 @@
 package consumer
 
 import (
-	"nikolamilovic/twitchy/accounts/utils"
-
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -11,11 +9,11 @@ type AccountConsumer struct {
 }
 
 func NewAccountConsumer(conn *amqp.Connection) *AccountConsumer {
-	ch, err := conn.Channel()
-	utils.FailOnError(err, "Failed to open a channel")
-	defer ch.Close()
+	// ch, err := conn.Channel()
 
-	ch.ExchangeDeclare("account_topic", "topic", true, false, false, false, nil)
+	// defer ch.Close()
+
+	// ch.ExchangeDeclare("account_topic", "topic", true, false, false, false, nil)
 
 	// q, err := ch.QueueDeclare(
 	// 	"account.created", // name

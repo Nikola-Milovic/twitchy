@@ -1,10 +1,10 @@
 package mock
 
-import "nikolamilovic/twitchy/accounts/model/event"
+import "nikolamilovic/twitchy/common/event"
 
 type AccountServiceMock struct {
 }
 
-func (a *AccountServiceMock) CreateUser(ev event.CreateAccountEvent) error {
+func (a *AccountServiceMock) CreateUser(ev event.AccountCreatedEvent) error {
 	return nil
 }

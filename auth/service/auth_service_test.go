@@ -5,8 +5,8 @@ import (
 	"errors"
 	clientMock "nikolamilovic/twitchy/auth/client/mock"
 	"nikolamilovic/twitchy/auth/model"
-	"nikolamilovic/twitchy/auth/model/event"
 	serviceMock "nikolamilovic/twitchy/auth/service/mock"
+	"nikolamilovic/twitchy/common/event"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -36,7 +36,7 @@ func TestRegistration(t *testing.T) {
 
 	mock.ExpectQuery("INSERT INTO users").WillReturnRows(rows)
 
-	clientMock.EXPECT().PublishAccountCreatedEvent(event.AccountCreatedEvent{Id: 1}).Return(nil)
+	clientMock.EXPECT().PublishAccountCreatedEvent(event.AccountCreatedEvent{ID: 1, Email: "test@gmail.com"}).Return(nil)
 
 	//WHEN
 	jwt, refresh, id, err := sut.Register("test@gmail.com", "123qwe")

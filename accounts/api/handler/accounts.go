@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 	"nikolamilovic/twitchy/accounts/service"
-	"nikolamilovic/twitchy/accounts/utils"
+	"nikolamilovic/twitchy/common/utils"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -42,7 +42,7 @@ func (h *AuthHandler) handleTest() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var req TestRequest
 
-		if err := utils.DecodeJSONBody(ctx, &req); err != nil {
+		if err := utils.DecodeJSONBodyFiber(ctx, &req); err != nil {
 			return fiber.NewError(http.StatusBadRequest, err.Error())
 		}
 

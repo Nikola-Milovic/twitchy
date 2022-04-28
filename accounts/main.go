@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"math/rand"
-	"nikolamilovic/twitchy/accounts/ampq"
 	"nikolamilovic/twitchy/accounts/api"
-	"nikolamilovic/twitchy/accounts/db"
+	"nikolamilovic/twitchy/accounts/service"
+	db "nikolamilovic/twitchy/common/db"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,31 +24,43 @@ func main() {
 	var (
 		shutdown = make(chan struct{})
 		ctx      = context.Background()
+		sigint   = make(chan os.Signal, 1)
 	)
-
-	os.Setenv("DATABASE_URL", "postgres://postgres:postgres@172.28.0.1:5432/accounts-db?sslmode=disable")
-	os.Setenv("AMQP_SERVER_URL", "amqp://172.27.0.1:5672/")
 
 	rand.Seed(time.Now().UnixNano())
 
-	dbConn, dbCleanup, err := db.InitDb(ctx)
-	_, ampqCleanup, err := ampq.InitAMPQ()
-
-	shutdowns = append(shutdowns, dbCleanup, ampqCleanup)
-
+	dbConn, dbCleanup, err := db.InitDb(ctx, logger.Sugar().Named("db"))
 	if err != nil {
-		logger.Fatal("Unable to initialize the app", zap.Error(err))
-		os.Exit(1)
+		logger.Fatal("failed to init the db", zap.Error(err))
 	}
 
-	srv := api.NewServer(dbConn)
+	// amqpServerURL := fmt.Sprintf("amqp://%s:%s@%s:%s/",
+	// 	os.Getenv("RABBITMQ_USER"),
+	// 	os.Getenv("RABBITMQ_PASSWORD"),
+	// 	os.Getenv("RABBITMQ_HOST"),
+	// 	os.Getenv("RABBITMQ_PORT"),
+	// )
+
+	// clientConnection := rabbitmq.NewClientConnection(logger.Sugar().Named("client_connection"), sigint)
+	// client := client.New(amqpServerURL, logger.Sugar().Named("accounts_rabbitmq_client"), clientConnection)
+
+	accountService := service.NewAccountService(dbConn)
+
+	srv := api.NewServer(accountService)
+
+	shutdowns = append(shutdowns, dbCleanup) //client.Close
+
+	defer logger.Sync()
 
 	go gracefulShutdown(srv.Server(), shutdown)
 
 	logger.Debug("Go listening on 4002")
 
-	srv.Listen(":4002")
-
+	err = srv.Listen(":4002")
+	if err != nil {
+		logger.Fatal("failed to start the server", zap.Error(err))
+		os.Exit(1)
+	}
 }
 
 func gracefulShutdown(server *fasthttp.Server, shutdown chan struct{}) {

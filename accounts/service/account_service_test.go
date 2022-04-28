@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"nikolamilovic/twitchy/accounts/model/event"
+	"nikolamilovic/twitchy/common/event"
 	"testing"
 
 	"github.com/pashagolub/pgxmock"
@@ -22,11 +22,11 @@ func TestUserCreation(t *testing.T) {
 	// before we actually execute our api function, we need to expect required DB actions
 	rows := pgxmock.NewRows([]string{"id"}).AddRow(1)
 
-	mock.ExpectQuery("INSERT INTO users").WithArgs(int64(1), "email@gmail.com").WillReturnRows(rows)
+	mock.ExpectQuery("INSERT INTO users").WithArgs(1, "email@gmail.com").WillReturnRows(rows)
 
-	err = sut.CreateUser(event.CreateAccountEvent{
-		UserId: 1,
-		Email:  "email@gmail.com",
+	err = sut.CreateUser(event.AccountCreatedEvent{
+		ID:    1,
+		Email: "email@gmail.com",
 	})
 
 	if err != nil {

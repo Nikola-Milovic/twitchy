@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"nikolamilovic/twitchy/auth/model/response"
 	"nikolamilovic/twitchy/auth/service"
-	"nikolamilovic/twitchy/auth/utils"
+	"nikolamilovic/twitchy/common/utils"
 
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"

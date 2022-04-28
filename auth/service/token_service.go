@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"math/rand"
 	"nikolamilovic/twitchy/auth/model"
-	 db "nikolamilovic/twitchy/common/db"
+	db "nikolamilovic/twitchy/common/db"
+	tok "nikolamilovic/twitchy/common/token"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -92,7 +93,7 @@ func (s *TokenService) saveRefreshToken(token string, userId int) error {
 }
 
 func generateTokens(userId int) (string, string, error) {
-	claims := model.UserClaims{
+	claims := tok.UserClaims{
 		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 5).Unix(),
@@ -143,7 +144,7 @@ func CheckJWTToken(tokenString string) (bool, error) {
 	})
 
 	if !token.Valid {
-		return false, model.InvalidJWTError
+		return false, tok.InvalidJWTError
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {

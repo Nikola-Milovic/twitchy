@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"nikolamilovic/twitchy/auth/client"
 	"nikolamilovic/twitchy/auth/model"
-	"nikolamilovic/twitchy/auth/model/event"
 	db "nikolamilovic/twitchy/common/db"
+	event "nikolamilovic/twitchy/common/event"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -47,7 +47,7 @@ func (s *AuthService) Register(email, password string) (string, string, int, err
 	// currently this poses an issue if the event emittion fails but we successfuly created a user
 	// so the user and event should be saved to the DB in a transaction
 
-	err = s.AccountRabbitClient.PublishAccountCreatedEvent(event.AccountCreatedEvent{Id: id})
+	err = s.AccountRabbitClient.PublishAccountCreatedEvent(event.AccountCreatedEvent{ID: id, Email: email})
 
 	if err != nil {
 		fmt.Printf("Error emitting account created event %s", err.Error())

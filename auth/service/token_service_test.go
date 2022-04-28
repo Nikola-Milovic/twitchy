@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"nikolamilovic/twitchy/auth/model"
+	tok "nikolamilovic/twitchy/common/token"
 	"testing"
 	"time"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func TestExpiredToken(t *testing.T) {
-	claims := model.UserClaims{
+	claims := tok.UserClaims{
 		UserId: 1,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: int64(time.Now().Add(time.Minute * -5).Unix()),
@@ -29,9 +29,9 @@ func TestExpiredToken(t *testing.T) {
 	if isValid {
 		t.Fatalf("Expected JWT to be invalid, got valid")
 	}
-	
-	if !errors.Is(err, model.InvalidJWTError) {
-		t.Fatalf("Expected error to be %e when checking JWT, got %e", model.InvalidJWTError, err)
+
+	if !errors.Is(err, tok.InvalidJWTError) {
+		t.Fatalf("Expected error to be %e when checking JWT, got %e", tok.InvalidJWTError, err)
 	}
 }
 

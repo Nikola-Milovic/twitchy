@@ -5,7 +5,7 @@
 package mock_client
 
 import (
-	event "nikolamilovic/twitchy/auth/model/event"
+	event "nikolamilovic/twitchy/common/event"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"

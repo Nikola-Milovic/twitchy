@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"nikolamilovic/twitchy/auth/model/event"
+	"nikolamilovic/twitchy/common/event"
 	"nikolamilovic/twitchy/common/rabbitmq"
 	"runtime"
 	"sync"

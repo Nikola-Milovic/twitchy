@@ -2,16 +2,15 @@ package token
 
 import (
 	"fmt"
-	"nikolamilovic/twitchy/accounts/model"
-	"time"
+
+	"errors"
 
 	"github.com/golang-jwt/jwt"
 )
 
-//TODO
-var secret = "test secret"
+var InvalidJWTError = errors.New("Invalid JWT Token")
 
-func CheckJWTToken(tokenString string) (bool, error) {
+func CheckJWTToken(tokenString string, secret string) (bool, error) {
 	// Parse takes the token string and a function for looking up the key. The latter is especially
 	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
 	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
@@ -26,7 +25,7 @@ func CheckJWTToken(tokenString string) (bool, error) {
 	})
 
 	if !token.Valid {
-		return false, model.InvalidJWTError
+		return false, InvalidJWTError
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
@@ -39,26 +38,4 @@ func CheckJWTToken(tokenString string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func GenerateTokens(userId int) (string, error) {
-	claims := model.UserClaims{
-		UserId: userId,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * 5).Unix(),
-			Issuer:    "twitchy", //TODO
-			IssuedAt:  time.Now().Unix(),
-			Subject:   fmt.Sprintf("%d", userId),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(secret)
-
-	if err != nil {
-		return "", fmt.Errorf("GenerateTokens: %w", err)
-	}
-
-	return tokenString, nil
 }
