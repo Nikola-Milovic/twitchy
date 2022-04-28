@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -9,9 +8,10 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"go.uber.org/zap"
 )
 
-func MigrateDb(dburl string) error {
+func MigrateDb(dburl string, l *zap.SugaredLogger) error {
 	m, err := migrate.New(
 		"file:///"+os.Getenv("MIGRATION_PATH"),
 		dburl,
@@ -21,10 +21,10 @@ func MigrateDb(dburl string) error {
 	}
 	if err := m.Up(); err != nil {
 		if strings.Contains(err.Error(), "no change") {
-			fmt.Println(err.Error())
+			l.Error(err.Error())
 		}
 	}
 
-	fmt.Println("Migrated DB")
+	l.Info("Migrated DB")
 	return err
 }

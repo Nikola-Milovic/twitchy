@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"nikolamilovic/twitchy/auth/client"
-	"nikolamilovic/twitchy/auth/db"
 	"nikolamilovic/twitchy/auth/model"
 	"nikolamilovic/twitchy/auth/model/event"
+	db "nikolamilovic/twitchy/common/db"
 
 	"golang.org/x/crypto/bcrypt"
 )

@@ -1,4 +1,4 @@
-package client
+package rabbitmq
 
 import (
 	"fmt"
@@ -9,16 +9,21 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// When reconnecting to the server after connection failure
+	reconnectDelay = 5 * time.Second
+)
+
 //Maybe manage a pool of channels
 type ClientConnection struct {
 	logger        *zap.SugaredLogger
 	connection    *amqp.Connection
-	channel       *amqp.Channel
-	done          chan os.Signal
-	notifyClose   chan *amqp.Error
-	notifyConfirm chan amqp.Confirmation
-	isConnected   bool
-	alive         bool
+	Channel       *amqp.Channel
+	Done          chan os.Signal
+	NotifyClose   chan *amqp.Error
+	NotifyConfirm chan amqp.Confirmation
+	IsConnected   bool
+	Alive         bool
 }
 
 // NewClientConnection creates a new ClientConnection
@@ -26,25 +31,25 @@ func NewClientConnection(logger *zap.SugaredLogger, done chan os.Signal) *Client
 
 	return &ClientConnection{
 		logger: logger,
-		done:   done,
-		alive:  true,
+		Done:   done,
+		Alive:  true,
 	}
 }
 
 // handleReconnect will wait for a connection error on
 // notifyClose, and then continuously attempt to reconnect.
-func (c *ClientConnection) handleReconnect(addr string, clientConnect func(*amqp.Channel) bool) {
-	for c.alive {
-		c.isConnected = false
+func (c *ClientConnection) HandleReconnect(addr string, clientConnect func(*amqp.Channel) bool) {
+	for c.Alive {
+		c.IsConnected = false
 		t := time.Now()
 		fmt.Printf("Attempting to connect to rabbitMQ: %s\n", addr)
 		var retryCount int
 		for !c.connect(addr, clientConnect) {
-			if !c.alive {
+			if !c.Alive {
 				return
 			}
 			select {
-			case <-c.done:
+			case <-c.Done:
 				return
 			case <-time.After(reconnectDelay + time.Duration(retryCount)*time.Second):
 				c.logger.Info("disconnected from rabbitMQ and failed to connect")
@@ -53,9 +58,9 @@ func (c *ClientConnection) handleReconnect(addr string, clientConnect func(*amqp
 		}
 		c.logger.Infof("Connected to rabbitMQ in: %vms", time.Since(t).Milliseconds())
 		select {
-		case <-c.done:
+		case <-c.Done:
 			return
-		case <-c.notifyClose:
+		case <-c.NotifyClose:
 		}
 	}
 }
@@ -83,7 +88,7 @@ func (c *ClientConnection) connect(addr string, clientConnect func(*amqp.Channel
 		return false
 	}
 	c.changeConnection(conn, ch)
-	c.isConnected = true
+	c.IsConnected = true
 	return true
 }
 
@@ -91,9 +96,23 @@ func (c *ClientConnection) connect(addr string, clientConnect func(*amqp.Channel
 // and updates the channel listeners to reflect this.
 func (c *ClientConnection) changeConnection(connection *amqp.Connection, channel *amqp.Channel) {
 	c.connection = connection
-	c.channel = channel
-	c.notifyClose = make(chan *amqp.Error)
-	c.notifyConfirm = make(chan amqp.Confirmation)
-	c.channel.NotifyClose(c.notifyClose)
-	c.channel.NotifyPublish(c.notifyConfirm)
+	c.Channel = channel
+	c.NotifyClose = make(chan *amqp.Error)
+	c.NotifyConfirm = make(chan amqp.Confirmation)
+	c.Channel.NotifyClose(c.NotifyClose)
+	c.Channel.NotifyPublish(c.NotifyConfirm)
+}
+
+func (c *ClientConnection) Close() error {
+	err := c.Channel.Close()
+	if err != nil {
+		c.logger.Errorf("failed to close channel: %v", err)
+	}
+	err = c.connection.Close()
+	if err != nil {
+		return err
+	}
+	c.IsConnected = false
+
+	return nil
 }

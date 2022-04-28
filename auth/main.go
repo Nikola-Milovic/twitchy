@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"nikolamilovic/twitchy/auth/api"
 	"nikolamilovic/twitchy/auth/client"
-	"nikolamilovic/twitchy/auth/db"
+	db "nikolamilovic/twitchy/common/db"
+	"nikolamilovic/twitchy/common/rabbitmq"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,10 +34,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to init the db", zap.Error(err))
 	}
-	// ampq, ampqCleanup, err := ampq.InitAMPQ(logger.Sugar().Named("ampq"))
-	// if err != nil {
-	// 	logger.Fatal("failed to connect to", zap.Error(err))
-	// }
+
 	amqpServerURL := fmt.Sprintf("amqp://%s:%s@%s:%s/",
 		os.Getenv("RABBITMQ_USER"),
 		os.Getenv("RABBITMQ_PASSWORD"),
@@ -44,7 +42,7 @@ func main() {
 		os.Getenv("RABBITMQ_PORT"),
 	)
 
-	clientConnection := client.NewClientConnection(logger.Sugar().Named("client_connection"), sigint)
+	clientConnection := rabbitmq.NewClientConnection(logger.Sugar().Named("client_connection"), sigint)
 	client := client.New(amqpServerURL, logger.Sugar().Named("accounts_rabbitmq_client"), clientConnection)
 
 	srv, err := api.NewServer(dbConn, client)

@@ -55,7 +55,7 @@ func InitDb(ctx context.Context, logger *zap.SugaredLogger) (PgxIface, func() er
 		return nil, nil, err
 	}
 
-	err = MigrateDb(dbUrl)
+	err = MigrateDb(dbUrl, logger)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to migrate the: %v\n", err)

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"nikolamilovic/twitchy/auth/db"
 	"nikolamilovic/twitchy/auth/model"
+	 db "nikolamilovic/twitchy/common/db"
 	"time"
 
 	"github.com/golang-jwt/jwt"

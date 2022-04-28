@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"nikolamilovic/twitchy/auth/api/handler"
 	"nikolamilovic/twitchy/auth/client"
-	"nikolamilovic/twitchy/auth/db"
 	"nikolamilovic/twitchy/auth/service"
+	db "nikolamilovic/twitchy/common/db"
 
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
@@ -34,8 +34,8 @@ func NewServer(db db.PgxIface, client *client.AccountClient) (*Server, error) {
 	}
 
 	authService := &service.AuthService{
-		DB:           s.db,
-		TokenService: tokenService,
+		DB:                  s.db,
+		TokenService:        tokenService,
 		AccountRabbitClient: client,
 	}
 

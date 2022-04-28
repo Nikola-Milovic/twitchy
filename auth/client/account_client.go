@@ -5,12 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"nikolamilovic/twitchy/auth/model/event"
+	"nikolamilovic/twitchy/common/rabbitmq"
 	"runtime"
 	"sync"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
+)
+
+const (
+	// When resending messages the server didn't confirm
+	resendDelay = 5 * time.Second
 )
 
 //https://www.ribice.ba/golang-rabbitmq-client/
@@ -26,25 +32,16 @@ type IAccountClient interface {
 	PublishAccountCreatedEvent(event event.AccountCreatedEvent) error
 }
 
-const (
-	// When reconnecting to the server after connection failure
-	reconnectDelay = 5 * time.Second
-
-	// When resending messages the server didn't confirm
-	resendDelay = 5 * time.Second
-)
-
 // AccountClient holds necessery information for rabbitMQ
 type AccountClient struct {
 	logger     *zap.SugaredLogger
-	connection *ClientConnection
-	channel    *amqp.Channel
+	connection *rabbitmq.ClientConnection
 	threads    int
 	wg         *sync.WaitGroup
 }
 
 // New is a constructor that takes address, push and listen queue names, logger, and a channel that will notify rabbitmq client on server shutdown. We calculate the number of threads, create the client, and start the connection process. Connect method connects to the rabbitmq server and creates push/listen channels if they don't exist.
-func New(addr string, l *zap.SugaredLogger, connection *ClientConnection) *AccountClient {
+func New(addr string, l *zap.SugaredLogger, connection *rabbitmq.ClientConnection) *AccountClient {
 	threads := runtime.GOMAXPROCS(0)
 	if numCPU := runtime.NumCPU(); numCPU > threads {
 		threads = numCPU
@@ -57,7 +54,7 @@ func New(addr string, l *zap.SugaredLogger, connection *ClientConnection) *Accou
 		wg:         &sync.WaitGroup{},
 	}
 
-	go client.connection.handleReconnect(addr, client.connect)
+	go client.connection.HandleReconnect(addr, client.connect)
 	return &client
 }
 
@@ -79,7 +76,7 @@ func (c *AccountClient) PublishAccountCreatedEvent(event event.AccountCreatedEve
 
 //TODO add a timeout to the push and store the event into db, this shouldn't block
 func (c *AccountClient) push(key string, data []byte) error {
-	if !c.connection.isConnected {
+	if !c.connection.IsConnected {
 		return errors.New("failed to push push: not connected")
 	}
 	for {
@@ -91,7 +88,7 @@ func (c *AccountClient) push(key string, data []byte) error {
 			return err
 		}
 		select {
-		case confirm := <-c.connection.notifyConfirm:
+		case confirm := <-c.connection.NotifyConfirm:
 			if confirm.Ack {
 				return nil
 			}
@@ -105,11 +102,11 @@ func (c *AccountClient) push(key string, data []byte) error {
 // No guarantees are provided for whether the server will
 // receive the message.
 func (c *AccountClient) unsafePush(key string, data []byte) error {
-	if !c.connection.isConnected {
+	if !c.connection.IsConnected {
 		return ErrDisconnected
 	}
 
-	return c.channel.Publish(
+	return c.connection.Channel.Publish(
 		accountsExchange, // Exchange
 		key,              // Routing key
 		false,            // Mandatory
@@ -170,7 +167,6 @@ func (c *AccountClient) connect(ch *amqp.Channel) bool {
 		return false
 	}
 
-	c.channel = ch
 	return true
 }
 
@@ -288,28 +284,26 @@ func (c *AccountClient) connect(ch *amqp.Channel) bool {
 // }
 
 func (c *AccountClient) Close() error {
-	if !c.connection.isConnected {
+	if !c.connection.IsConnected {
 		return nil
 	}
-	c.connection.alive = false
+	c.connection.Alive = false
 	c.logger.Info("Waiting for current messages to be processed...")
 	c.wg.Wait()
 	for i := 1; i <= c.threads; i++ {
 		fmt.Println("Closing consumer: ", i)
-		err := c.channel.Cancel(consumerName(i), false)
+		err := c.connection.Channel.Cancel(consumerName(i), false)
 		if err != nil {
 			return fmt.Errorf("error canceling consumer %s: %v", consumerName(i), err)
 		}
 	}
-	err := c.channel.Close()
+
+	err := c.connection.Close()
+
 	if err != nil {
 		return err
 	}
-	err = c.connection.connection.Close()
-	if err != nil {
-		return err
-	}
-	c.connection.isConnected = false
+
 	c.logger.Info("gracefully stopped rabbitMQ connection")
 	return nil
 }
