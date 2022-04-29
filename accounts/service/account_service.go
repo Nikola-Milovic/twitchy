@@ -8,7 +8,7 @@ import (
 )
 
 type IAccountService interface {
-	CreateUser(ev event.AccountCreatedEvent) error
+	CreateUser(ev event.AccountCreatedEventData) error
 }
 
 type AccountService struct {
@@ -21,7 +21,7 @@ func NewAccountService(db db.PgxIface) IAccountService {
 	}
 }
 
-func (s *AccountService) CreateUser(ev event.AccountCreatedEvent) error {
+func (s *AccountService) CreateUser(ev event.AccountCreatedEventData) error {
 	rows, err := s.DB.Query(context.Background(), "INSERT INTO users (id, email) VALUES ($1,$2)", ev.ID, ev.Email)
 
 	if err != nil {

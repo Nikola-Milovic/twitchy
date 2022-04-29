@@ -24,7 +24,7 @@ func main() {
 	var (
 		shutdown = make(chan struct{})
 		ctx      = context.Background()
-		sigint   = make(chan os.Signal, 1)
+		_        = make(chan os.Signal, 1)
 	)
 
 	rand.Seed(time.Now().UnixNano())

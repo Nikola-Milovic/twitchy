@@ -1,6 +1,7 @@
 package rabbitmq
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -8,6 +9,8 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
+
+var ErrDisconnected = errors.New("disconnected from rabbitmq, trying to reconnect")
 
 const (
 	// When reconnecting to the server after connection failure

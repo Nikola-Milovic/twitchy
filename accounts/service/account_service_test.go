@@ -24,7 +24,7 @@ func TestUserCreation(t *testing.T) {
 
 	mock.ExpectQuery("INSERT INTO users").WithArgs(1, "email@gmail.com").WillReturnRows(rows)
 
-	err = sut.CreateUser(event.AccountCreatedEvent{
+	err = sut.CreateUser(event.AccountCreatedEventData{
 		ID:    1,
 		Email: "email@gmail.com",
 	})

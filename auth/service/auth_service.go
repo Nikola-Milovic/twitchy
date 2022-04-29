@@ -47,7 +47,8 @@ func (s *AuthService) Register(email, password string) (string, string, int, err
 	// currently this poses an issue if the event emittion fails but we successfuly created a user
 	// so the user and event should be saved to the DB in a transaction
 
-	err = s.AccountRabbitClient.PublishAccountCreatedEvent(event.AccountCreatedEvent{ID: id, Email: email})
+	err = s.AccountRabbitClient.PublishAccountCreatedEvent(
+		event.AccountCreatedEventData{ID: id, Email: email})
 
 	if err != nil {
 		fmt.Printf("Error emitting account created event %s", err.Error())

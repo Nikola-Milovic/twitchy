@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"nikolamilovic/twitchy/common/constants"
 	"nikolamilovic/twitchy/common/event"
 	"nikolamilovic/twitchy/common/rabbitmq"
 	"runtime"
@@ -20,16 +21,8 @@ const (
 )
 
 //https://www.ribice.ba/golang-rabbitmq-client/
-var (
-	ErrDisconnected   = errors.New("disconnected from rabbitmq, trying to reconnect")
-	authServiceQueue  = "auth_service_queue"
-	accountsQueue     = "accounts_queue"
-	accountsExchange  = "accounts_topic"
-	accountCreatedKey = "account.created"
-)
-
 type IAccountClient interface {
-	PublishAccountCreatedEvent(event event.AccountCreatedEvent) error
+	PublishAccountCreatedEvent(event event.AccountCreatedEventData) error
 }
 
 // AccountClient holds necessery information for rabbitMQ
@@ -40,7 +33,6 @@ type AccountClient struct {
 	wg         *sync.WaitGroup
 }
 
-// New is a constructor that takes address, push and listen queue names, logger, and a channel that will notify rabbitmq client on server shutdown. We calculate the number of threads, create the client, and start the connection process. Connect method connects to the rabbitmq server and creates push/listen channels if they don't exist.
 func New(addr string, l *zap.SugaredLogger, connection *rabbitmq.ClientConnection) *AccountClient {
 	threads := runtime.GOMAXPROCS(0)
 	if numCPU := runtime.NumCPU(); numCPU > threads {
@@ -55,18 +47,30 @@ func New(addr string, l *zap.SugaredLogger, connection *rabbitmq.ClientConnectio
 	}
 
 	go client.connection.HandleReconnect(addr, client.connect)
+
 	return &client
 }
 
 // Push a new message that an account has been created
-func (c *AccountClient) PublishAccountCreatedEvent(event event.AccountCreatedEvent) error {
-	data, err := json.Marshal(event)
+func (c *AccountClient) PublishAccountCreatedEvent(data event.AccountCreatedEventData) error {
+	payload, err := json.Marshal(data)
+
+	if err != nil {
+		return err
+	}
+
+	baseEv := event.BaseEvent{
+		Type:    event.AccountCreatedType,
+		Payload: string(payload),
+	}
+
+	ev, err := json.Marshal(baseEv)
 
 	if err != nil {
 		return fmt.Errorf("failed to marshal event: %v", err)
 	}
 
-	return c.push(accountCreatedKey, data)
+	return c.push(constants.AccountCreatedKey, ev)
 }
 
 // Push will push data onto the queue, and wait for a confirmation.
@@ -82,7 +86,7 @@ func (c *AccountClient) push(key string, data []byte) error {
 	for {
 		err := c.unsafePush(key, data)
 		if err != nil {
-			if err == ErrDisconnected {
+			if err == rabbitmq.ErrDisconnected {
 				continue
 			}
 			return err
@@ -103,14 +107,14 @@ func (c *AccountClient) push(key string, data []byte) error {
 // receive the message.
 func (c *AccountClient) unsafePush(key string, data []byte) error {
 	if !c.connection.IsConnected {
-		return ErrDisconnected
+		return rabbitmq.ErrDisconnected
 	}
 
 	return c.connection.Channel.Publish(
-		accountsExchange, // Exchange
-		key,              // Routing key
-		false,            // Mandatory
-		false,            // Immediate
+		constants.AccountsExchange, // Exchange
+		key,                        // Routing key
+		false,                      // Mandatory
+		false,                      // Immediate
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        data,
@@ -122,7 +126,7 @@ func (c *AccountClient) unsafePush(key string, data []byte) error {
 // RabbitMq. It returns the success of the attempt.
 func (c *AccountClient) connect(ch *amqp.Channel) bool {
 
-	err := ch.ExchangeDeclare(accountsExchange, "topic", true, false, false, false, nil)
+	err := ch.ExchangeDeclare(constants.AccountsExchange, "topic", true, false, false, false, nil)
 
 	if err != nil {
 		c.logger.Errorf("failed to declare exchange: %v", err)
@@ -130,7 +134,7 @@ func (c *AccountClient) connect(ch *amqp.Channel) bool {
 	}
 
 	_, err = ch.QueueDeclare(
-		authServiceQueue,
+		constants.AuthServiceQueue,
 		true,  // Durable
 		false, // Delete when unused
 		false, // Exclusive
@@ -138,12 +142,12 @@ func (c *AccountClient) connect(ch *amqp.Channel) bool {
 		nil,   // Arguments
 	)
 	if err != nil {
-		c.logger.Errorf("failed to declare %s queue: %v", authServiceQueue, err)
+		c.logger.Errorf("failed to declare %s queue: %v", constants.AuthServiceQueue, err)
 		return false
 	}
 
 	_, err = ch.QueueDeclare(
-		accountsQueue,
+		constants.AccountsQueue,
 		true,  // Durable
 		false, // Delete when unused
 		false, // Exclusive
@@ -151,16 +155,16 @@ func (c *AccountClient) connect(ch *amqp.Channel) bool {
 		nil,   // Arguments
 	)
 	if err != nil {
-		c.logger.Errorf("failed to declare %s queue: %v", accountsQueue, err)
+		c.logger.Errorf("failed to declare %s queue: %v", constants.AccountsQueue, err)
 		return false
 	}
 
-	err = ch.QueueBind(accountsQueue, accountCreatedKey, accountsExchange, true, nil)
+	err = ch.QueueBind(constants.AccountsQueue, constants.AccountCreatedKey, constants.AccountsExchange, true, nil)
 	if err != nil {
 		c.logger.Errorf("failed to bind push queue: %v", err)
 		return false
 	}
-	err = ch.QueueBind(authServiceQueue, "", accountsExchange, true, nil)
+	err = ch.QueueBind(constants.AuthServiceQueue, "", constants.AccountsExchange, true, nil)
 
 	if err != nil {
 		c.logger.Errorf("failed to bind stream queue: %v", err)

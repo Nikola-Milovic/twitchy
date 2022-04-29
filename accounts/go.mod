@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/golang/mock v1.6.0
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/valyala/fasthttp v1.35.0
 )

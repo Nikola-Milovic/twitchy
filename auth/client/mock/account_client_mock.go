@@ -35,7 +35,7 @@ func (m *MockIAccountClient) EXPECT() *MockIAccountClientMockRecorder {
 }
 
 // PublishAccountCreatedEvent mocks base method.
-func (m *MockIAccountClient) PublishAccountCreatedEvent(event event.AccountCreatedEvent) error {
+func (m *MockIAccountClient) PublishAccountCreatedEvent(event event.AccountCreatedEventData) error {
         m.ctrl.T.Helper()
         ret := m.ctrl.Call(m, "PublishAccountCreatedEvent", event)
         ret0, _ := ret[0].(error)
