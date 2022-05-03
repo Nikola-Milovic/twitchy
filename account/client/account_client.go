@@ -53,6 +53,18 @@ func New(addr string, l *zap.SugaredLogger, service service.IAccountService, con
 	return &client
 }
 
+func (c *AccountClient) Consume(cancelCtx context.Context) {
+	go func() {
+		for {
+			err := c.stream(cancelCtx)
+			if errors.Is(err, rabbitmq.ErrDisconnected) {
+				continue
+			}
+			break
+		}
+	}()
+}
+
 func (c *AccountClient) push(key string, data []byte) error {
 	if !c.connection.IsConnected {
 		return errors.New("failed to push push: not connected")
@@ -205,6 +217,8 @@ func (c *AccountClient) parseEvent(msg amqp.Delivery) {
 			msg.Nack(false, false)
 		}
 	}(evt, msg, l)
+
+	c.logger.Infof("Received event %v", evt)
 
 	switch evt.Type {
 	case event.AccountCreatedType:

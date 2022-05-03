@@ -1,0 +1,52 @@
+version: "3.2"
+services:
+  account-db:
+    image: postgres:14.1-alpine
+    restart: always
+    command: postgres -c listen_addresses='*'
+    container_name: "account-db"
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=account-dev
+    volumes:
+      - accounts_db_volume:/var/lib/postgresql/data
+  auth-db:
+    command: postgres -c listen_addresses='*'
+    image: postgres:14.1-alpine
+    restart: always
+    container_name: "auth-db"
+    ports:
+      - "5435:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth-dev
+    volumes:
+      - auth_db_volume:/var/lib/postgresql/data
+  chat-db:
+    image: postgres:14.1-alpine
+    restart: always
+    container_name: "chat-db"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=chat-dev
+    volumes:
+      - chat_db_volume:/var/lib/postgresql/data
+
+networks:
+  rabbitmq_net:
+    driver: bridge
+
+volumes:
+  accounts_db_volume:
+    driver: local
+  auth_db_volume:
+    driver: local
+  chat_db_volume:
+    driver: local
+  rabbitmq_data:
+  rabbitmq_log:

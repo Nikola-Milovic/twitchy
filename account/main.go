@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"nikolamilovic/twitchy/accounts/api"
+	"nikolamilovic/twitchy/accounts/client"
 	"nikolamilovic/twitchy/accounts/service"
 	db "nikolamilovic/twitchy/common/db"
+	"nikolamilovic/twitchy/common/rabbitmq"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,7 +27,7 @@ func main() {
 	var (
 		shutdown = make(chan struct{})
 		ctx      = context.Background()
-		_        = make(chan os.Signal, 1)
+		sigint   = make(chan os.Signal, 1)
 	)
 
 	rand.Seed(time.Now().UnixNano())
@@ -34,17 +37,18 @@ func main() {
 		logger.Fatal("failed to init the db", zap.Error(err))
 	}
 
-	// amqpServerURL := fmt.Sprintf("amqp://%s:%s@%s:%s/",
-	// 	os.Getenv("RABBITMQ_USER"),
-	// 	os.Getenv("RABBITMQ_PASSWORD"),
-	// 	os.Getenv("RABBITMQ_HOST"),
-	// 	os.Getenv("RABBITMQ_PORT"),
-	// )
-
-	// clientConnection := rabbitmq.NewClientConnection(logger.Sugar().Named("client_connection"), sigint)
-	// client := client.New(amqpServerURL, logger.Sugar().Named("accounts_rabbitmq_client"), clientConnection)
+	amqpServerURL := fmt.Sprintf("amqp://%s:%s@%s:%s/",
+		os.Getenv("RABBITMQ_USER"),
+		os.Getenv("RABBITMQ_PASSWORD"),
+		os.Getenv("RABBITMQ_HOST"),
+		os.Getenv("RABBITMQ_PORT"),
+	)
 
 	accountService := service.NewAccountService(dbConn)
+
+	clientConnection := rabbitmq.NewClientConnection(logger.Sugar().Named("client_connection"), sigint)
+	client := client.New(amqpServerURL, logger.Sugar().Named("accounts_rabbitmq_client"), accountService, clientConnection)
+	client.Consume(ctx)
 
 	srv := api.NewServer(accountService)
 

@@ -3,7 +3,9 @@ FROM golang:alpine AS build
 RUN apk add git
 
 RUN mkdir /src
-ADD . /src
+RUN mkdir /common_go
+ADD ./auth /src
+ADD ./common_go /common_go
 WORKDIR /src
 
 RUN go build -o /tmp/auth ./main.go

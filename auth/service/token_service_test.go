@@ -1,15 +1,19 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"nikolamilovic/twitchy/common/token"
 	tok "nikolamilovic/twitchy/common/token"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/pashagolub/pgxmock"
 )
 
 func TestExpiredToken(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test secret")
 	claims := tok.UserClaims{
 		UserId: 1,
 		StandardClaims: jwt.StandardClaims{
@@ -25,7 +29,7 @@ func TestExpiredToken(t *testing.T) {
 		t.Fatalf("Expected error to be nil, got %v", err.Error())
 	}
 
-	isValid, err := CheckJWTToken(tokenString)
+	isValid, err := tok.CheckJWTToken(tokenString, string(secret))
 	if isValid {
 		t.Fatalf("Expected JWT to be invalid, got valid")
 	}
@@ -36,6 +40,7 @@ func TestExpiredToken(t *testing.T) {
 }
 
 func TestGenarateNewTokens(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test secret")
 	jwt, refresh, err := generateTokens(1)
 	if err != nil {
 		t.Fatalf("Expected error to be nil, got %v", err.Error())
@@ -45,7 +50,7 @@ func TestGenarateNewTokens(t *testing.T) {
 		t.Fatalf("Expected refresh token to be 128 characters long, got %d", len(refresh))
 	}
 
-	isValid, err := CheckJWTToken(jwt)
+	isValid, err := tok.CheckJWTToken(jwt, string(secret))
 
 	if err != nil {
 		t.Fatalf("Expected error to be nil when checking JWT, got %v", err.Error())
@@ -55,7 +60,7 @@ func TestGenarateNewTokens(t *testing.T) {
 		t.Fatalf("Expected JWT to be valid, got invalid")
 	}
 
-	isValid, err = CheckJWTToken(jwt + "a")
+	isValid, err = tok.CheckJWTToken(jwt+"a", string(secret))
 
 	if err == nil {
 		t.Fatalf("Expected error to be not nil when checking JWT, got nil")
@@ -66,29 +71,55 @@ func TestGenarateNewTokens(t *testing.T) {
 	}
 }
 
-//	mock, err := pgxmock.NewConn()
-// if err != nil {
-// 	t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-// }
-// defer mock.Close(context.Background())
+func TestRefreshToken(t *testing.T) {
+	//Setup
+	t.Setenv("JWT_SECRET", "test secret")
 
-// sut := &AuthService{
-// 	DB: mock,
-// }
+	mock, err := pgxmock.NewConn()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer mock.Close(context.Background())
 
-// hashedPassword, _ := hashPassword("password")
+	_, jwt, err := generateTokens(1)
 
-// // before we actually execute our api function, we need to expect required DB actions
-// rows := pgxmock.NewRows([]string{"id", "password"}).AddRow(1, hashedPassword)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got %v", err.Error())
+	}
 
-// mock.ExpectQuery("SELECT (.+) FROM users").WillReturnRows(rows)
+	rows := pgxmock.NewRows([]string{"user_id", "token", "expires"}).AddRow(1, jwt, time.Now().Add(time.Minute*5).Unix()).AddRow(1, jwt, time.Now().Add(time.Minute*5).Unix())
 
-// id, err := sut.CheckLogin("test@gmail.com", "wrongpassword")
+	mock.ExpectQuery("SELECT user_id, token, expires FROM refresh_tokens").WithArgs("correct_token").
+		WillReturnRows(rows)
+	mock.ExpectExec("INSERT INTO refresh_tokens").WithArgs(1, pgxmock.AnyArg(), pgxmock.AnyArg())
+		mock.ExpectQuery("SELECT user_id, token, expires FROM refresh_tokens").WithArgs("incorrect_token").
+		WillReturnRows(pgxmock.NewRows([]string{"user_id", "token", "expires"}))
 
-// if id != -1 {
-// 	t.Fatalf("Expected id to be %d got %d", -1, id)
-// }
+	s := &TokenService{
+		DB: mock,
+	}
+	correctJwt, correctRefresh, err := s.RefreshToken("correct_token")
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got %v", err.Error())
+	}
+	valid, err := token.CheckJWTToken(correctJwt, "test secret")
 
-// if !errors.Is(err, model.WrongPasswordError) {
-// 	t.Fatalf("wrong error , expected %e, got %e", model.WrongPasswordError, err)
-// }
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got %v", err.Error())
+	}
+
+	if !valid {
+		t.Fatalf("Expected JWT to be valid, got invalid")
+	}
+
+	if len(correctRefresh) != 128 {
+		t.Errorf("TokenService.RefreshToken() refresh token length not 128, got %d", len(correctRefresh))
+	}
+
+	_, _, err = s.RefreshToken("incorrect_token")
+
+	if err == nil {
+		t.Fatalf("Expected error to be not nil, got nil")
+	}
+
+}

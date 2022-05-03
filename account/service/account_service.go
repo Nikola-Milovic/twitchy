@@ -30,5 +30,7 @@ func (s *AccountService) CreateUser(ev event.AccountCreatedEventData) error {
 
 	defer rows.Close()
 
+	fmt.Printf("User created: %v", ev)
+
 	return nil
 }

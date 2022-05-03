@@ -8,13 +8,13 @@ import (
 	"nikolamilovic/twitchy/auth/model"
 	db "nikolamilovic/twitchy/common/db"
 	tok "nikolamilovic/twitchy/common/token"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 )
 
-//TODO
-var secret = []byte("test secret")
+var secret = []byte(os.Getenv("JWT_SECRET"))
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 type ITokenService interface {
@@ -33,7 +33,7 @@ func (s *TokenService) RefreshToken(refreshTokenString string) (string, string, 
 		return "", "", fmt.Errorf("Refresh token: %w", err)
 	}
 
-	if res.CommandTag().RowsAffected() == 0 || !res.Next() {
+	if !res.Next() {
 		return "", "", fmt.Errorf("No RefreshToken: %w", errors.New("No rows returned"))
 	}
 
@@ -44,7 +44,11 @@ func (s *TokenService) RefreshToken(refreshTokenString string) (string, string, 
 		return "", "", fmt.Errorf("RefreshToken: %w", err)
 	}
 
-	verifyRefreshToken(refreshToken)
+	isValid := verifyRefreshToken(refreshToken)
+
+	if !isValid {
+		return "", "", fmt.Errorf("RefreshToken: %w", errors.New("Refresh token is not valid"))
+	}
 
 	jwt, refresh, err := generateTokens(refreshToken.UserId)
 
@@ -79,7 +83,7 @@ func (s *TokenService) GenerateNewTokensForUser(userId int) (string, string, err
 }
 
 func (s *TokenService) saveRefreshToken(token string, userId int) error {
-	expiresAt := time.Now().Add(time.Hour * 24 * 7)
+	expiresAt := time.Now().Add(time.Hour * 24 * 7).Unix()
 	res, err := s.DB.Exec(context.Background(), "INSERT INTO refresh_tokens (user_id, token, expires) VALUES ($1, $2, $3)", userId, token, expiresAt)
 
 	if err != nil {
@@ -127,34 +131,4 @@ func verifyRefreshToken(token model.RefreshToken) bool {
 	}
 
 	return true
-}
-
-func CheckJWTToken(tokenString string) (bool, error) {
-	// Parse takes the token string and a function for looking up the key. The latter is especially
-	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
-	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
-	// to the callback, providing flexibility.
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-
-		return secret, nil
-	})
-
-	if !token.Valid {
-		return false, tok.InvalidJWTError
-	}
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		err := claims.Valid()
-		if err != nil {
-			return false, fmt.Errorf("Claims Invalid: %w", err)
-		}
-	} else {
-		return false, fmt.Errorf("Claims Invalid: %w", err)
-	}
-
-	return true, nil
 }
