@@ -58,13 +58,14 @@ func main() {
 
 	go gracefulShutdown(srv.Server(), shutdown)
 
-	logger.Debug("Go listening on 4002")
+	port := fmt.Sprintf(":%s", os.Getenv("PORT"))
 
-	err = srv.Listen(":4002")
+	err = srv.Listen(port)
 	if err != nil {
 		logger.Fatal("failed to start the server", zap.Error(err))
 		os.Exit(1)
 	}
+	logger.Info("Server starting and listening at port " + port)
 }
 
 func gracefulShutdown(server *fasthttp.Server, shutdown chan struct{}) {

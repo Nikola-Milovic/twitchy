@@ -20,7 +20,8 @@ services:
   auth-service:
     build: 
       context: .
-      dockerfile: ./auth/Dockerfile
+      dockerfile: ./auth/Dockerfile.dev    
+      target: dev
     container_name: "auth-service"
     environment:
       - POSTGRES_USER=postgres
@@ -36,7 +37,7 @@ services:
       - RABBITMQ_PORT=5672
       - VIRTUAL_HOST=api.twitchy.dev
       - VIRTUAL_PATH=/v1/auth/
-      - MIGRATION_PATH=sbin/db/migrations
+      - MIGRATION_PATH=opt/app/api/db/migrations
     deploy:
       restart_policy:
         condition: on-failure
@@ -46,10 +47,15 @@ services:
     networks:
       - rabbitmq_net
       - default
+      #For live reloading in development, we'll mount the source code directly
+    volumes:
+      - ./auth:/opt/app/api
+      - ./common_go:/opt/app/common_go
   account-service:
     build:
       context: .
-      dockerfile: ./account/Dockerfile
+      dockerfile: ./account/Dockerfile.dev
+      target: dev
     container_name: "account-service"
     environment:
       - POSTGRES_USER=postgres
@@ -64,7 +70,7 @@ services:
       - RABBITMQ_PORT=5672
       - VIRTUAL_HOST=api.twitchy.dev
       - VIRTUAL_PATH=/v1/account/
-      - MIGRATION_PATH=sbin/db/migrations
+      - MIGRATION_PATH=opt/app/api/db/migrations
     deploy:
       restart_policy:
         condition: on-failure
@@ -74,8 +80,14 @@ services:
     networks:
       - rabbitmq_net
       - default
+    volumes:
+      - ./account:/opt/app/api
+      - ./common_go:/opt/app/common_go
   chat-service:
-    build: ./chat
+    build: 
+      context: ./chat 
+      dockerfile: Dockerfile.dev
+      target: dev
     container_name: "chat-service"
     environment:
       - POSTGRES_USER=postgres
@@ -96,6 +108,8 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
+    volumes:
+      - ./chat:/opt/app/api
     networks:
       - rabbitmq_net
       - default

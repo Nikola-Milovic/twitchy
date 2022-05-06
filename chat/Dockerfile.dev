@@ -1,0 +1,10 @@
+FROM elixir:latest as dev
+
+RUN apt-get update 
+
+# Run the air command in the directory where our code will live
+WORKDIR /opt/app/api
+# Install Hex package manager.
+RUN mix local.hex --force
+
+CMD ["iex" , "-S", "mix", "phx.server"]
