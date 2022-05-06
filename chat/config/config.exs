@@ -13,15 +13,24 @@ config :chat,
 # Configures the endpoint
 config :chat, ChatWeb.Endpoint,
   url: [host: "localhost"],
-  render_errors: [view: ChatWeb.ErrorView, accepts: ~w(json), layout: false],
+  port: System.get_env("PORT"),
   pubsub_server: Chat.PubSub,
   live_view: [signing_salt: "VqpB9cdA"]
 
-# TODO add to prod,  get secret from env
+# Configure your database
+config :chat, Chat.Repo,
+  username: System.get_env("POSTGRES_USER"),
+  password: System.get_env("POSTGRES_PASSWORD"),
+  hostname: System.get_env("POSTGRES_HOST"),
+  database: System.get_env("POSTGRES_DB"),
+  port: System.get_env("POSTGRES_PORT"),
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
+
 config :joken,
   hs256: [
     signer_alg: "HS256",
-    key_octet: "test secret"
+    key_octet: System.get_env("JWT_SECRET")
   ]
 
 # Configures Elixir's Logger

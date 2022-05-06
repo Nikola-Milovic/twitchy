@@ -1,52 +1,108 @@
 version: "3.2"
 services:
-  account-db:
-    image: postgres:14.1-alpine
-    restart: always
-    command: postgres -c listen_addresses='*'
-    container_name: "account-db"
+  nginx:
+    image: jwilder/nginx-proxy
     ports:
-      - "5434:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=account-dev
+      - "3000:80"
     volumes:
-      - accounts_db_volume:/var/lib/postgresql/data
-  auth-db:
-    command: postgres -c listen_addresses='*'
-    image: postgres:14.1-alpine
-    restart: always
-    container_name: "auth-db"
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: "rabbitmq"
     ports:
-      - "5435:5432"
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_log:/var/log/rabbitmq/
+    networks:
+      - rabbitmq_net
+  auth-service:
+    build: 
+      context: .
+      dockerfile: ./auth/Dockerfile
+    container_name: "auth-service"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=auth-db
       - POSTGRES_DB=auth-dev
-    volumes:
-      - auth_db_volume:/var/lib/postgresql/data
-  chat-db:
-    image: postgres:14.1-alpine
-    restart: always
-    container_name: "chat-db"
+      - POSTGRES_PORT=5432
+      - JWT_SECRET="test secret"
+      - PORT=3000
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - VIRTUAL_HOST=api.twitchy.dev
+      - VIRTUAL_PATH=/v1/auth/
+      - MIGRATION_PATH=sbin/db/migrations
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    networks:
+      - rabbitmq_net
+      - default
+  account-service:
+    build:
+      context: .
+      dockerfile: ./account/Dockerfile
+    container_name: "account-service"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=account-db
+      - POSTGRES_DB=account-dev
+      - POSTGRES_PORT=5432
+      - PORT=3000
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - VIRTUAL_HOST=api.twitchy.dev
+      - VIRTUAL_PATH=/v1/account/
+      - MIGRATION_PATH=sbin/db/migrations
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    networks:
+      - rabbitmq_net
+      - default
+  chat-service:
+    build: ./chat
+    container_name: "chat-service"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=chat-db
       - POSTGRES_DB=chat-dev
-    volumes:
-      - chat_db_volume:/var/lib/postgresql/data
-
+      - POSTGRES_PORT=5432
+      - PORT=3000
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - VIRTUAL_HOST=api.twitchy.dev
+      - VIRTUAL_PATH=/v1/chat/
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    networks:
+      - rabbitmq_net
+      - default
 networks:
   rabbitmq_net:
     driver: bridge
 
 volumes:
-  accounts_db_volume:
-    driver: local
-  auth_db_volume:
-    driver: local
-  chat_db_volume:
-    driver: local
   rabbitmq_data:
   rabbitmq_log:
