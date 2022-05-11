@@ -22,8 +22,8 @@ config :chat, Chat.Repo,
   username: System.get_env("POSTGRES_USER"),
   password: System.get_env("POSTGRES_PASSWORD"),
   hostname: System.get_env("POSTGRES_HOST"),
-  database: System.get_env("POSTGRES_DB"),
-  port: System.get_env("POSTGRES_PORT"),
+  database: "#{System.get_env("POSTGRES_DB")}-#{Mix.env()}",
+  port: 5432,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 

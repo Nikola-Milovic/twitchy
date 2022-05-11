@@ -1,0 +1,31 @@
+version: "3.2"
+services:
+  chat-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: "chat-service-test"
+    command:
+      - ./test.sh
+    depends_on:
+      - chat-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=chat-db
+      - POSTGRES_DB=chat
+      - POSTGRES_PORT=5432
+      - PORT=3000
+      - MIX_ENV=test
+      - JWT_SECRET="test-secret"
+    volumes:
+      - .:/opt/app/api
+  chat-db:
+    image: postgres:14.1-alpine
+    restart: always
+    container_name: "chat-db-test"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=chat-test
+

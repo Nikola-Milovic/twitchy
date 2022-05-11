@@ -1,10 +1,17 @@
-FROM elixir:latest as dev
+FROM bitwalker/alpine-elixir-phoenix:latest
 
-RUN apt-get update 
+RUN mkdir -p /opt/app/api
 
-# Run the air command in the directory where our code will live
 WORKDIR /opt/app/api
-# Install Hex package manager.
-RUN mix local.hex --force
 
-CMD ["iex" , "-S", "mix", "phx.server"]
+# Install debian packages
+RUN apk add postgresql
+
+# # Install Phoenix packages
+# RUN mix local.hex --force
+# RUN mix local.rebar --force
+# RUN mix archive.install --force https://github.com/phoenixframework/archives/raw/master/phx_new.ez
+
+EXPOSE $PORT
+
+# CMD ["bash", "-c", "./entrypoint.sh"]

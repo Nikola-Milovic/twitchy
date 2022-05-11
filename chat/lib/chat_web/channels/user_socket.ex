@@ -7,7 +7,7 @@ defmodule ChatWeb.UserSocket do
   # assign values that can be accessed by your channel topics.
 
   ## Channels
-  channel "room:*", ChatWeb.RoomChannel
+  channel("room:*", ChatWeb.RoomChannel)
   #
   # To create a channel file, use the mix task:
   #

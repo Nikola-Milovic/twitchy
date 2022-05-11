@@ -30,7 +30,7 @@ services:
       - POSTGRES_DB=auth-dev
       - POSTGRES_PORT=5432
       - JWT_SECRET="test secret"
-      - PORT=3000
+      - PORT=80
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
       - RABBITMQ_HOST=rabbitmq
@@ -63,7 +63,7 @@ services:
       - POSTGRES_HOST=account-db
       - POSTGRES_DB=account-dev
       - POSTGRES_PORT=5432
-      - PORT=3000
+      - PORT=80
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
       - RABBITMQ_HOST=rabbitmq
@@ -87,15 +87,18 @@ services:
     build: 
       context: ./chat 
       dockerfile: Dockerfile.dev
-      target: dev
+    command:
+      - ./entrypoint.sh
     container_name: "chat-service"
+    depends_on:
+      - chat-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_HOST=chat-db
-      - POSTGRES_DB=chat-dev
+      - POSTGRES_DB=chat
       - POSTGRES_PORT=5432
-      - PORT=3000
+      - PORT=80
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
       - RABBITMQ_HOST=rabbitmq
