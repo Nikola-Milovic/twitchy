@@ -23,6 +23,7 @@ func NewAuthHandler(validator *validator.Validate, auth service.IAuthService, to
 	h := &AuthHandler{}
 
 	h.authService = auth
+	h.tokenService = token
 	h.validator = validator
 
 	h.Routes()

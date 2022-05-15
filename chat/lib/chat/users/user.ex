@@ -1,4 +1,7 @@
 defmodule Chat.Users.User do
+  @moduledoc """
+  This is a Users module, containing all of the functionality needed to work with User entities (database models)
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

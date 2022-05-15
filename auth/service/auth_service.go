@@ -43,6 +43,8 @@ func (s *AuthService) Register(email, password string) (string, string, int, err
 		return "", "", -1, fmt.Errorf("Register create user %w", err)
 	}
 
+	fmt.Printf("Created user with id %d\n", id)
+
 	//TODO add events to a workbox in DB to be eventually emitted
 	// currently this poses an issue if the event emittion fails but we successfuly created a user
 	// so the user and event should be saved to the DB in a transaction
@@ -127,11 +129,14 @@ func (s *AuthService) createUser(email, password string) (int, error) {
 		return -1, err
 	}
 
-	defer rows.Close()
-
 	var id = -1
 	if rows.Next() {
-		rows.Scan(&id)
+		err = rows.Scan(&id)
+		if err != nil {
+			return -1, err
+		}
+	} else {
+		return -1, fmt.Errorf("CreateUser: no next %v", rows)
 	}
 
 	return id, nil

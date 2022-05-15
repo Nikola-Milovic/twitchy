@@ -84,7 +84,8 @@ func (s *TokenService) GenerateNewTokensForUser(userId int) (string, string, err
 
 func (s *TokenService) saveRefreshToken(token string, userId int) error {
 	expiresAt := time.Now().Add(time.Hour * 24 * 7).Unix()
-	res, err := s.DB.Exec(context.Background(), "INSERT INTO refresh_tokens (user_id, token, expires) VALUES ($1, $2, $3)", userId, token, expiresAt)
+	//INSERT if refresh token for given user doesnt exist already, otherwise update
+	res, err := s.DB.Exec(context.Background(), "INSERT INTO refresh_tokens (user_id, token, expires) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET token = $2, expires = $3", userId, token, expiresAt)
 
 	if err != nil {
 		return fmt.Errorf("Insert refresh token: %w", err)

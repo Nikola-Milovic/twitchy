@@ -31,7 +31,6 @@ defmodule ChatWeb.UserSocket do
   def connect(%{"token" => token}, socket, _connect_info) do
     case Chat.Token.verify_and_validate(token) do
       {:ok, claims} ->
-        IO.inspect(claims)
         {:ok, socket}
 
       {:error, _} ->

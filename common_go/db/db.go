@@ -8,12 +8,12 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 )
 
 type PgxIface interface {
 	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
-	Close(context.Context) error
 	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 }
 
@@ -32,7 +32,7 @@ func InitDb(ctx context.Context, logger *zap.SugaredLogger) (PgxIface, func() er
 	// fmt.Println(os.Getenv("POSTGRES_DB"))
 	fmt.Println(dbUrl)
 
-	conn, err := pgx.Connect(context.Background(), dbUrl)
+	conn, err := pgxpool.Connect(context.Background(), dbUrl)
 
 	maxAttempts := 20
 	for attempts := 1; attempts <= maxAttempts; attempts++ {
@@ -42,7 +42,7 @@ func InitDb(ctx context.Context, logger *zap.SugaredLogger) (PgxIface, func() er
 			if conn != nil {
 				err = conn.Ping(ctx)
 			} else {
-				conn, err = pgx.Connect(context.Background(), dbUrl)
+				conn, err = pgxpool.Connect(context.Background(), dbUrl)
 			}
 		}
 
@@ -62,5 +62,5 @@ func InitDb(ctx context.Context, logger *zap.SugaredLogger) (PgxIface, func() er
 		return nil, nil, err
 	}
 
-	return conn, func() error { return conn.Close(ctx) }, nil
+	return conn, func() error { conn.Close(); return nil }, nil
 }

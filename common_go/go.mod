@@ -23,6 +23,7 @@ require (
 	github.com/jackc/pgproto3/v2 v2.3.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/pgtype v1.11.0 // indirect
+	github.com/jackc/puddle v1.2.1 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

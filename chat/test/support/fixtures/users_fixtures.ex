@@ -8,7 +8,7 @@ defmodule Chat.UsersFixtures do
   Generate a user.
   """
   def user_fixture(attrs \\ %{}) do
-    id = :rand.uniform(10000)
+    id = :rand.uniform(10_000)
 
     {:ok, user} =
       attrs
