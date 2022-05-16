@@ -16,6 +16,15 @@ else
   echo "\nNo Dialyxer config: Skipping setup..."
 fi
 
+#Analysis style code
+# Prepare Credo if the project has Credo start code analyze
+if mix help credo >/dev/null 2>&1
+then
+  echo "\nFound Credo: analyzing..."
+  mix credo || true
+else
+  echo "\nNo Credo config: Skipping code analyze..."
+fi
 
 # Wait for Postgres to become available.
 until pg_isready -h $POSTGRES_HOST -U "postgres"; do

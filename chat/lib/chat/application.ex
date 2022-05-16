@@ -18,7 +18,7 @@ defmodule Chat.Application do
       ChatWeb.Endpoint,
       # Start a worker by calling: Chat.Worker.start_link(arg)
       # {Chat.Worker, arg}
-      Chat.AMQP.ConnectionManager
+      Chat.AMQP.Supervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
