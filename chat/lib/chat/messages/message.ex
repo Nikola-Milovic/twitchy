@@ -10,7 +10,6 @@ defmodule Chat.Messages.Message do
     timestamps()
   end
 
-
   @doc false
   def changeset(message, attrs) do
     message

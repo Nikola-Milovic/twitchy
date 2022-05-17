@@ -57,7 +57,6 @@ defmodule Chat.AMQP.AccountConsumer do
 
   @impl GenServer
   def handle_info({:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}}, chan) do
-    Logger.debug("Received event #{payload}")
     # You might want to run payload consumption in separate Tasks in production
     consume(chan, tag, redelivered, payload)
     {:noreply, chan}
@@ -83,6 +82,15 @@ defmodule Chat.AMQP.AccountConsumer do
   end
 
   defp consume(channel, tag, redelivered, payload) do
+    case Chat.Handler.AccountEvents.handle_event(payload) do
+      :ok ->
+        Basic.ack(channel, tag)
+        :ok
+
+      {:error, err} ->
+        Basic.reject(channel, tag, requeue: not redelivered)
+        {:error, err}
+    end
   rescue
     # Requeue unless it's a redelivered message.
     # This means we will retry consuming a message once in case of exception
@@ -93,28 +101,7 @@ defmodule Chat.AMQP.AccountConsumer do
     # receiving messages.
     exception ->
       :ok = Basic.reject(channel, tag, requeue: not redelivered)
-      IO.puts("Error consuming event #{payload}, on channel #{channel}")
-  end
-
-  defp handle_event(channel, tag, payload) do
-    Logger.info("Received unknown event #{payload}")
-    # Ack the message
-    :ok = Basic.ack(channel, tag)
-    {:noreply, channel}
-  end
-
-  defp handle_event(channel, tag, %{
-         type: :account_created,
-         payload: %{id: id, email: email, username: username}
-       }) do
-    :ok = Basic.ack(channel, tag)
-
-    # if number <= 10 do
-    #   :ok = Basic.ack(channel, tag)
-    #   IO.puts("Consumed a #{number}.")
-    # else
-    #   :ok = Basic.reject(channel, tag, requeue: false)
-    #   IO.puts("#{number} is too big and was rejected.")
-    # end
+      Logger.error("Error consuming event #{payload}")
+      IO.inspect(exception)
   end
 end

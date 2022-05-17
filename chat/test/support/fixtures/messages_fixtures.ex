@@ -19,6 +19,7 @@ defmodule Chat.MessagesFixtures do
 
     message
   end
+
   def message_fixture_no_preload(user, attrs \\ %{}) do
     {:ok, message} =
       attrs
@@ -31,7 +32,6 @@ defmodule Chat.MessagesFixtures do
 
     message
   end
-
 
   @spec message_fixture_with_user(any) ::
           nil | [%{optional(atom) => any}] | %{optional(atom) => any}

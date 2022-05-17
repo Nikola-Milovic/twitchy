@@ -43,7 +43,9 @@ defmodule Chat.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:joken, "~> 2.4"},
       {:amqp, "~> 3.1"},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:poison, "~> 5.0"},
+      {:exsync, "~> 0.2", only: :dev}
     ]
   end
 
