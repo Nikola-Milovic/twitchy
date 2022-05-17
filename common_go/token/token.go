@@ -10,7 +10,7 @@ import (
 
 var InvalidJWTError = errors.New("Invalid JWT Token")
 
-func CheckJWTToken(tokenString string, secret string) (bool, error) {
+func CheckJWTToken(tokenString string, secret []byte) (bool, error) {
 	// Parse takes the token string and a function for looking up the key. The latter is especially
 	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
 	// head of the token to identify which key to use, but the parsed token (head and claims) is provided

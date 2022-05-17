@@ -133,18 +133,18 @@ func (c *AccountClient) connect(ch *amqp.Channel) bool {
 		return false
 	}
 
-	_, err = ch.QueueDeclare(
-		constants.AuthServiceQueue,
-		true,  // Durable
-		false, // Delete when unused
-		false, // Exclusive
-		false, // No-wait
-		nil,   // Arguments
-	)
-	if err != nil {
-		c.logger.Errorf("failed to declare %s queue: %v", constants.AuthServiceQueue, err)
-		return false
-	}
+	// _, err = ch.QueueDeclare(
+	// 	constants.AuthServiceQueue,
+	// 	true,  // Durable
+	// 	false, // Delete when unused
+	// 	false, // Exclusive
+	// 	false, // No-wait
+	// 	nil,   // Arguments
+	// )
+	// if err != nil {
+	// 	c.logger.Errorf("failed to declare %s queue: %v", constants.AuthServiceQueue, err)
+	// 	return false
+	// }
 
 	_, err = ch.QueueDeclare(
 		constants.AccountsQueue,
@@ -164,12 +164,12 @@ func (c *AccountClient) connect(ch *amqp.Channel) bool {
 		c.logger.Errorf("failed to bind push queue: %v", err)
 		return false
 	}
-	err = ch.QueueBind(constants.AuthServiceQueue, "", constants.AccountsExchange, true, nil)
+	// err = ch.QueueBind(constants.AuthServiceQueue, "", constants.AccountsExchange, true, nil)
 
-	if err != nil {
-		c.logger.Errorf("failed to bind stream queue: %v", err)
-		return false
-	}
+	// if err != nil {
+	// 	c.logger.Errorf("failed to bind stream queue: %v", err)
+	// 	return false
+	// }
 
 	return true
 }

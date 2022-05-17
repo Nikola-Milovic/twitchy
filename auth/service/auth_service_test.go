@@ -37,11 +37,11 @@ func TestRegistration(t *testing.T) {
 	mock.ExpectQuery("INSERT INTO users").WillReturnRows(rows)
 
 	clientMock.EXPECT().PublishAccountCreatedEvent(
-		event.AccountCreatedEventData{ID: 1, Email: "test@gmail.com"},
+		event.AccountCreatedEventData{ID: 1, Email: "test@gmail.com", Username: "username"},
 	).Return(nil)
 
 	//WHEN
-	jwt, refresh, id, err := sut.Register("test@gmail.com", "123qwe")
+	jwt, refresh, id, err := sut.Register("test@gmail.com", "123qwe", "username")
 
 	//SHOULD
 	if jwt != "JWT" {

@@ -13,7 +13,9 @@ import (
 )
 
 func TestExpiredToken(t *testing.T) {
-	t.Setenv("JWT_SECRET", "test secret")
+	secret := []byte("test secret")
+	t.Setenv("JWT_SECRET", string(secret))
+
 	claims := tok.UserClaims{
 		UserId: 1,
 		StandardClaims: jwt.StandardClaims{
@@ -29,7 +31,7 @@ func TestExpiredToken(t *testing.T) {
 		t.Fatalf("Expected error to be nil, got %v", err.Error())
 	}
 
-	isValid, err := tok.CheckJWTToken(tokenString, string(secret))
+	isValid, err := tok.CheckJWTToken(tokenString, secret)
 	if isValid {
 		t.Fatalf("Expected JWT to be invalid, got valid")
 	}
@@ -40,7 +42,9 @@ func TestExpiredToken(t *testing.T) {
 }
 
 func TestGenarateNewTokens(t *testing.T) {
-	t.Setenv("JWT_SECRET", "test secret")
+	secret := []byte("test secret")
+	t.Setenv("JWT_SECRET", string(secret))
+
 	jwt, refresh, err := generateTokens(1)
 	if err != nil {
 		t.Fatalf("Expected error to be nil, got %v", err.Error())
@@ -50,7 +54,7 @@ func TestGenarateNewTokens(t *testing.T) {
 		t.Fatalf("Expected refresh token to be 128 characters long, got %d", len(refresh))
 	}
 
-	isValid, err := tok.CheckJWTToken(jwt, string(secret))
+	isValid, err := tok.CheckJWTToken(jwt, secret)
 
 	if err != nil {
 		t.Fatalf("Expected error to be nil when checking JWT, got %v", err.Error())
@@ -60,7 +64,7 @@ func TestGenarateNewTokens(t *testing.T) {
 		t.Fatalf("Expected JWT to be valid, got invalid")
 	}
 
-	isValid, err = tok.CheckJWTToken(jwt+"a", string(secret))
+	isValid, err = tok.CheckJWTToken(jwt+"a", secret)
 
 	if err == nil {
 		t.Fatalf("Expected error to be not nil when checking JWT, got nil")
@@ -73,7 +77,8 @@ func TestGenarateNewTokens(t *testing.T) {
 
 func TestRefreshToken(t *testing.T) {
 	//Setup
-	t.Setenv("JWT_SECRET", "test secret")
+	secret := []byte("test secret")
+	t.Setenv("JWT_SECRET", string(secret))
 
 	mock, err := pgxmock.NewConn()
 	if err != nil {
@@ -91,8 +96,10 @@ func TestRefreshToken(t *testing.T) {
 
 	mock.ExpectQuery("SELECT user_id, token, expires FROM refresh_tokens").WithArgs("correct_token").
 		WillReturnRows(rows)
-	mock.ExpectExec("INSERT INTO refresh_tokens").WithArgs(1, pgxmock.AnyArg(), pgxmock.AnyArg())
-		mock.ExpectQuery("SELECT user_id, token, expires FROM refresh_tokens").WithArgs("incorrect_token").
+	mock.ExpectExec("INSERT INTO refresh_tokens ").WithArgs(1, pgxmock.AnyArg(), pgxmock.AnyArg()).WillReturnResult(
+		pgxmock.NewResult("INSERT", 1),
+	)
+	mock.ExpectQuery("SELECT user_id, token, expires FROM refresh_tokens").WithArgs("incorrect_token").
 		WillReturnRows(pgxmock.NewRows([]string{"user_id", "token", "expires"}))
 
 	s := &TokenService{
@@ -102,7 +109,7 @@ func TestRefreshToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected error to be nil, got %v", err.Error())
 	}
-	valid, err := token.CheckJWTToken(correctJwt, "test secret")
+	valid, err := token.CheckJWTToken(correctJwt, secret)
 
 	if err != nil {
 		t.Fatalf("Expected error to be nil, got %v", err.Error())

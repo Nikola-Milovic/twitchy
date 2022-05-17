@@ -19,7 +19,8 @@ import (
 func TestRegistration(t *testing.T) {
 	reader := strings.NewReader(`{
 		"email":"test@gmail.com",
-		"password":"123qwe123"
+		"password":"123qwe123",
+		"username": "username"
 	 }`)
 	req := httptest.NewRequest(http.MethodPost, "/register", reader)
 	req.Header.Set("Content-Type", "application/json")
@@ -71,7 +72,8 @@ func TestRegistrationErrors(t *testing.T) {
 			description: "invalid email",
 			input: `{
 				"email":"invalid",
-				"password":"123qwe123"
+				"password":"123qwe123",
+				"username": "username"
 			 }`,
 			expected:       "Key: 'RegistrationRequest.Email' Error:Field validation for 'Email' failed on the 'email' tag\n",
 			expectedStatus: http.StatusBadRequest,
@@ -80,9 +82,18 @@ func TestRegistrationErrors(t *testing.T) {
 			description: "missing password",
 			input: `{
 				"email":"valid@gmail.com",
-				"password":"123"
+				"password":"123",
+				"username": "username"
 			 }`,
 			expected:       "Key: 'RegistrationRequest.Password' Error:Field validation for 'Password' failed on the 'min' tag\n",
+			expectedStatus: http.StatusBadRequest,
+		}, {
+			description: "missing username",
+			input: `{
+				"email":"valid@gmail.com",
+				"password":"123qwe123"
+			 }`,
+			expected:       "Key: 'RegistrationRequest.Username' Error:Field validation for 'Username' failed on the 'required' tag\n",
 			expectedStatus: http.StatusBadRequest,
 		},
 	} {
@@ -179,7 +190,7 @@ func TestRefresh(t *testing.T) {
 	res := w.Result()
 	defer res.Body.Close()
 	data, err := ioutil.ReadAll(res.Body)
-	
+
 	if err != nil {
 		t.Errorf("expected error to be nil got %v", err)
 	}

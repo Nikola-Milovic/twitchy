@@ -6,8 +6,9 @@ const (
 )
 
 type AccountCreatedEventData struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
 }
 
 type AccountCreatedAckData struct {

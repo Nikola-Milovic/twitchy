@@ -15,7 +15,7 @@ import (
 // another layer on top of this simple example is just a bit overkill for the time being.
 
 type IAuthService interface {
-	Register(email, password string) (string, string, int, error)
+	Register(email, password, username string) (string, string, int, error)
 	Login(email, password string) (string, string, int, error)
 }
 
@@ -36,8 +36,8 @@ func checkPasswordHash(password, hash string) bool {
 }
 
 //Return JWT, refresh token and the user ID
-func (s *AuthService) Register(email, password string) (string, string, int, error) {
-	id, err := s.createUser(email, password)
+func (s *AuthService) Register(email, password, username string) (string, string, int, error) {
+	id, err := s.createUser(email, password, username)
 
 	if err != nil {
 		return "", "", -1, fmt.Errorf("Register create user %w", err)
@@ -50,7 +50,7 @@ func (s *AuthService) Register(email, password string) (string, string, int, err
 	// so the user and event should be saved to the DB in a transaction
 
 	err = s.AccountRabbitClient.PublishAccountCreatedEvent(
-		event.AccountCreatedEventData{ID: id, Email: email})
+		event.AccountCreatedEventData{ID: id, Email: email, Username: username})
 
 	if err != nil {
 		fmt.Printf("Error emitting account created event %s", err.Error())
@@ -112,8 +112,8 @@ func (a *AuthService) checkLogin(email, password string) (int, error) {
 	}
 }
 
-func (s *AuthService) createUser(email, password string) (int, error) {
-	fmt.Printf("Creating user with %s email and %s password\n", email, password)
+func (s *AuthService) createUser(email, password, username string) (int, error) {
+	fmt.Printf("Creating user with email %s, password: %s and username: %s\n", email, password, username)
 
 	hashedPassword, err := hashPassword(password)
 
@@ -122,7 +122,7 @@ func (s *AuthService) createUser(email, password string) (int, error) {
 		return -1, err
 	}
 
-	rows, err := s.DB.Query(context.Background(), "INSERT INTO users (email, password) VALUES ($1,$2) RETURNING id", email, hashedPassword)
+	rows, err := s.DB.Query(context.Background(), "INSERT INTO users (email, password, username) VALUES ($1,$2) RETURNING id", email, hashedPassword, username)
 
 	if err != nil {
 		fmt.Printf("Error creating user %s", err.Error())

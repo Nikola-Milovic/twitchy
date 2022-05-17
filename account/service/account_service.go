@@ -22,7 +22,7 @@ func NewAccountService(db db.PgxIface) IAccountService {
 }
 
 func (s *AccountService) CreateUser(ev event.AccountCreatedEventData) error {
-	rows, err := s.DB.Query(context.Background(), "INSERT INTO users (id, email) VALUES ($1,$2)", ev.ID, ev.Email)
+	rows, err := s.DB.Query(context.Background(), "INSERT INTO users (id, email, username) VALUES ($1,$2,$3)", ev.ID, ev.Email, ev.Username)
 
 	if err != nil {
 		return fmt.Errorf("CreateUser %w", err)

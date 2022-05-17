@@ -48,6 +48,7 @@ func (h *AuthHandler) handleRegistration() http.HandlerFunc {
 	type RegistrationRequest struct {
 		Email    string `json:"email" validate:"required,email"`
 		Password string `json:"password" validate:"required,min=6"`
+		Username string `json:"username" validate:"required"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +65,7 @@ func (h *AuthHandler) handleRegistration() http.HandlerFunc {
 			return
 		}
 
-		jwt, refresh, id, err := h.authService.Register(req.Email, req.Password)
+		jwt, refresh, id, err := h.authService.Register(req.Email, req.Password, req.Username)
 
 		if err != nil {
 			fmt.Println(err.Error())

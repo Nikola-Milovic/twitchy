@@ -14,7 +14,6 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-var secret = []byte(os.Getenv("JWT_SECRET"))
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 type ITokenService interface {
@@ -27,19 +26,8 @@ type TokenService struct {
 }
 
 func (s *TokenService) RefreshToken(refreshTokenString string) (string, string, error) {
-	res, err := s.DB.Query(context.Background(), "SELECT user_id, token, expires FROM refresh_tokens WHERE token = $1", refreshTokenString)
 
-	if err != nil {
-		return "", "", fmt.Errorf("Refresh token: %w", err)
-	}
-
-	if !res.Next() {
-		return "", "", fmt.Errorf("No RefreshToken: %w", errors.New("No rows returned"))
-	}
-
-	var refreshToken model.RefreshToken
-	err = res.Scan(&refreshToken.UserId, &refreshToken.Token, &refreshToken.Expires)
-
+	refreshToken, err := s.fetchRefreshToken(refreshTokenString)
 	if err != nil {
 		return "", "", fmt.Errorf("RefreshToken: %w", err)
 	}
@@ -82,18 +70,40 @@ func (s *TokenService) GenerateNewTokensForUser(userId int) (string, string, err
 	return jwt, refresh, nil
 }
 
+//get Refresh token
+func (s *TokenService) fetchRefreshToken(refreshTokenString string) (model.RefreshToken, error) {
+	res, err := s.DB.Query(context.Background(), "SELECT user_id, token, expires FROM refresh_tokens WHERE token = $1", refreshTokenString)
+
+	if err != nil {
+		return model.RefreshToken{}, fmt.Errorf("fetchRefreshToken: %w", err)
+	}
+
+	if !res.Next() {
+		return model.RefreshToken{}, fmt.Errorf("fetchRefreshToken: %w", errors.New("No rows returned"))
+	}
+
+	var refreshToken model.RefreshToken
+	err = res.Scan(&refreshToken.UserId, &refreshToken.Token, &refreshToken.Expires)
+
+	if err != nil {
+		return model.RefreshToken{}, fmt.Errorf("fetchRefreshToken: %w", err)
+	}
+
+	return refreshToken, nil
+}
+
 func (s *TokenService) saveRefreshToken(token string, userId int) error {
 	expiresAt := time.Now().Add(time.Hour * 24 * 7).Unix()
 	//INSERT if refresh token for given user doesnt exist already, otherwise update
 	res, err := s.DB.Exec(context.Background(), "INSERT INTO refresh_tokens (user_id, token, expires) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET token = $2, expires = $3", userId, token, expiresAt)
 
 	if err != nil {
-		return fmt.Errorf("Insert refresh token: %w", err)
+		return fmt.Errorf("saveRefreshToken: %w", err)
 	}
 	if res.RowsAffected() > 0 {
 		return nil
 	} else {
-		return fmt.Errorf("Insert refresh token: %w", errors.New("No rows affected"))
+		return fmt.Errorf("saveRefreshToken: %w", errors.New("No rows affected"))
 	}
 }
 
@@ -109,8 +119,8 @@ func generateTokens(userId int) (string, string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(secret)
+	secret := os.Getenv("JWT_SECRET")
+	tokenString, err := token.SignedString([]byte(secret))
 
 	b := make([]rune, 128)
 	for i := range b {

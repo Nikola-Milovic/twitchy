@@ -3,7 +3,7 @@ package mock
 type AuthServiceMock struct {
 }
 
-func (a *AuthServiceMock) Register(email, password string) (string, string, int, error) {
+func (a *AuthServiceMock) Register(email, password, username string) (string, string, int, error) {
 	return "JWT", "REFRESH", 1, nil
 }
 
