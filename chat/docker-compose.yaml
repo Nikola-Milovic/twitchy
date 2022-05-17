@@ -18,14 +18,11 @@ services:
       - PORT=3000
       - MIX_ENV=test
       - JWT_SECRET="test-secret"
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOST=rabbitmq-test
+      - RABBITMQ_PORT=5672
     volumes:
       - .:/opt/app/api
-  chat-db:
-    image: postgres:14.1-alpine
-    restart: always
-    container_name: "chat-db-test"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=chat-test
-
+    networks: #For the sake of not leaking anything during tests, we are on a separate network
+      - chat_test_network
