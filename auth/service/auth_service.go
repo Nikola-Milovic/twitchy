@@ -122,7 +122,7 @@ func (s *AuthService) createUser(email, password, username string) (int, error) 
 		return -1, err
 	}
 
-	rows, err := s.DB.Query(context.Background(), "INSERT INTO users (email, password, username) VALUES ($1,$2) RETURNING id", email, hashedPassword, username)
+	rows, err := s.DB.Query(context.Background(), "INSERT INTO users (email, password, username) VALUES ($1,$2,$3) RETURNING id", email, hashedPassword, username)
 
 	if err != nil {
 		fmt.Printf("Error creating user %s", err.Error())

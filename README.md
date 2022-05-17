@@ -25,6 +25,9 @@ Clone the repository, to get it up and running just run the docker compose from 
 
 You might need to give permission to the script beforehand. The script is there to merge the compose files for services and databases as it got quite messy considering it's Database-per-Service.
 
+
+To allow for 🔥blazingly🔥 fast development, I added (Air)[https://github.com/cosmtrek/air] live reload for go apps, and (exsync)[https://github.com/falood/exsync] for the elixir code reloads. 
+
 ## Testing
 
 ### Chat service
