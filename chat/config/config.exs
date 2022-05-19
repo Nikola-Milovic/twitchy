@@ -36,7 +36,7 @@ config :joken,
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id, :pid, :file]
+  metadata: [:pid]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

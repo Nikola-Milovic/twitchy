@@ -34,6 +34,7 @@ defmodule Chat.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.6.6"},
+      {:phoenix_live_dashboard, "~> 0.5"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.6"},
       {:postgrex, ">= 0.0.0"},
@@ -45,7 +46,8 @@ defmodule Chat.MixProject do
       {:amqp, "~> 3.1"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:poison, "~> 5.0"},
-      {:exsync, "~> 0.2", only: :dev}
+      {:exsync, "~> 0.2", only: :dev},
+      {:ecto_psql_extras, "~> 0.6"}
     ]
   end
 

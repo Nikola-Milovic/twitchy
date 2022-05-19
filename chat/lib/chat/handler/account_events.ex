@@ -2,37 +2,50 @@ defmodule Chat.Handler.AccountEvents do
   alias AMQP.Basic
   require Logger
 
-  def handle_event(event) do
-    {:ok, data} = decode_event(event)
-    IO.inspect(data)
-    :ok
+  def handle_event(raw_event) do
+    with {:ok, parsed_event} = decode_event(raw_event),
+         {:ok, user} = do_handle_event(parsed_event) do
+      :ok
+    else
+      {:error, error} ->
+        {:error, error}
+    end
   end
 
-  def handle_event(channel, tag, %{
-        type: :account_created,
-        payload: %{id: id, email: email, username: username}
-      }) do
-    :ok = Basic.ack(channel, tag)
-
-    # if number <= 10 do
-    #   :ok = Basic.ack(channel, tag)
-    #   IO.puts("Consumed a #{number}.")
-    # else
-    #   :ok = Basic.reject(channel, tag, requeue: false)
-    #   IO.puts("#{number} is too big and was rejected.")
-    # end
+  defp do_handle_event(%{
+         type: :account_created,
+         payload: %{id: id, email: email, username: username}
+       }) do
+    Chat.Users.create_user(%{
+      id: id,
+      username: username
+    })
   end
 
-  defp decode_event(event) do
-    with {:ok, %{"type" => type, "payload" => payload_string}} = Poison.decode(event),
-         {:ok, payload} = Poison.decode(payload_string) do
-      data = %{type: type, payload: payload}
-      Logger.log(:info, "Handled event #{data}")
+  defp do_handle_event(ev) do
+    IO.inspect(ev)
+    {:error, "Unknown event type"}
+  end
+
+  # Key to atoms is dangerous here, but our queues should be protected/ safe
+  defp decode_event(raw_event) when is_binary(raw_event) do
+    with {:ok, %{type: type, payload: payload_string}} =
+           Poison.decode(raw_event, %{keys: :atoms}),
+         {:ok, payload} = Poison.decode(payload_string, %{keys: :atoms}) do
+      data = %{type: event_type_to_atom(type), payload: payload}
+      Logger.log(:debug, "Handled event #{inspect(data)}")
       {:ok, data}
     else
       {:error, err} ->
-        Logger.log(:error, "Error decoding event #{event}, #{err}")
         {:error, err}
     end
   end
+
+  defp decode_event(unknown_event) do
+    IO.inspect(unknown_event)
+    {:error, "Unknown event data type"}
+  end
+
+  defp event_type_to_atom(str) when str in ~w(account_created),
+    do: String.to_atom(str)
 end

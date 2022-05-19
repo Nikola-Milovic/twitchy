@@ -92,13 +92,15 @@ services:
     container_name: "chat-service"
     depends_on:
       - chat-db
+    ports: 
+      - 4005:4000
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_HOST=chat-db
       - POSTGRES_DB=chat
       - POSTGRES_PORT=5432
-      - PORT=80
+      - PORT=4000
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
       - RABBITMQ_HOST=rabbitmq

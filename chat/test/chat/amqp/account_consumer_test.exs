@@ -1,11 +1,21 @@
 defmodule Chat.AMQP.AccountConsumerTest do
-  use ExUnit.Case, async: true
+  use Chat.DataCase
+
+  defp generate_account_created_event() do
+    id = :rand.uniform(10_000)
+    email = "test#{id}@gmail.com"
+    username = "test username#{id}"
+
+    {id, email, username,
+     "{\"type\":\"account_created\",\"payload\":\"{\\\"id\\\":#{id},\\\"email\\\":\\\"#{email}\\\",\\\"username\\\":\\\"#{username}\\\"}\"}"}
+  end
 
   describe "handle_info :basic_deliver" do
-    test "when there is :account_created event, will create account" do
-      payload =
-        "{\"type\":\"account_created\",\"payload\":\"{\\\"id\\\":1,\\\"email\\\":\\\"test@gmail.com\\\",\\\"username\\\":\\\"test username\\\"}\"}"
+    test "consuming :account_created event, will create user entry" do
+      # GIVEN
+      {id, _email, username, payload} = generate_account_created_event()
 
+      # WHEN
       Process.send(
         Chat.AMQP.AccountConsumer,
         {
@@ -15,6 +25,15 @@ defmodule Chat.AMQP.AccountConsumerTest do
         },
         []
       )
+
+      # Wait for GenServer cast to finish
+      _ = :sys.get_state(Chat.AMQP.AccountConsumer)
+
+      # SHOULD
+      user = Chat.Users.get_user!(id)
+
+      assert user.id == id
+      assert user.username == username
     end
   end
 end

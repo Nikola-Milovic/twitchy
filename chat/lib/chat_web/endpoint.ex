@@ -5,7 +5,7 @@ defmodule ChatWeb.Endpoint do
     websocket: true,
     longpoll: true
 
-  # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  socket "/live", Phoenix.LiveView.Socket
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.

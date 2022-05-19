@@ -57,7 +57,7 @@ defmodule Chat.AMQP.AccountConsumer do
 
   @impl GenServer
   def handle_info({:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}}, chan) do
-    # You might want to run payload consumption in separate Tasks in production
+    # Payload consumption in separate Tasks in production
     consume(chan, tag, redelivered, payload)
     {:noreply, chan}
   end
@@ -84,10 +84,12 @@ defmodule Chat.AMQP.AccountConsumer do
   defp consume(channel, tag, redelivered, payload) do
     case Chat.Handler.AccountEvents.handle_event(payload) do
       :ok ->
+        Logger.debug("Handled #{inspect(payload)}")
         Basic.ack(channel, tag)
         :ok
 
       {:error, err} ->
+        Logger.error("Error handling event: #{inspect(err)}")
         Basic.reject(channel, tag, requeue: not redelivered)
         {:error, err}
     end
