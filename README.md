@@ -1,16 +1,17 @@
 ### Twitchy
 
 Twitchy is a pet project made to play around with new technologies and techniques for writing distributed performant systems. 
-The idea of the project is to have a Twitch clone but only have audio instead of video (maybe I'll go for video streaming as well, haven't decided yet)
+The goal of the project is to have a simple streaming platform.
 
 ## Technologies
 
 Languages used: Golang for most of the REST API's, Elixir for real-time chatting
+
 UI: Phoenix LiveView + Tailwind CSS
 
-I've used Fiber, and Chi as web frameworks for the Golang, to try them out. Fiber is really cool and similar to Express, and Chi seems like successor of Gorrila/Mux
+I've used Fiber, and Chi as web frameworks for the services written in Go, to try them out. Fiber is really cool and similar to Express, and Chi seems like successor of Gorrila/Mux
 
-Chat microservice has the standard setup, Phoenix + Ecto and no assets/ html.
+Chat service, Phoenix + Ecto, no assets/ html.
 
 RabbitMQ as the Message Broker.
 
@@ -26,7 +27,7 @@ Clone the repository, to get it up and running just run the docker compose from 
 You might need to give permission to the script beforehand. The script is there to merge the compose files for services and databases as it got quite messy considering it's Database-per-Service.
 
 
-To allow for 🔥blazingly🔥 fast development, I added (Air)[https://github.com/cosmtrek/air] live reload for go apps, and (exsync)[https://github.com/falood/exsync] for the elixir code reloads. 
+To allow for 🔥blazingly🔥 fast development, I added [Air](https://github.com/cosmtrek/air) live reload for go apps, and [exsync](https://github.com/falood/exsync) for the elixir code reloads. 
 
 ## Testing
 
@@ -51,9 +52,9 @@ go test ./...
 
 Code quality is mediocre, as I was trying out a bunch of things I sometimes would lazy out on some aspects of the architecture or "good practices". It could use a bit of refactoring here and there.
 
-The services are missing a few layers, most notably a repository or a data layer. It would be much cleaner and easier to change databases later, but for my purposes I am keeping it easier to change stuff for the time being.
+The services are missing a few layers, most notably a repository or a data layer. It would be much cleaner and easier to change databases later, but for quick and dirty iterations it's fine.
 
-There is a k8 folder, I played around with Kubernetes and Skaffold to get a feel for them, but didn't want to probe any deeper at the moment as my focus is purely on architecture/ actual Microservices.
+There is a K8 folder, I played around with Kubernetes and Skaffold to get a feel for them, but the experience was rather lacking, and considering the complexity of K8 I put that on hold for the time being.
 
 ### Improvements
 - [ ] Workbox pattern, store events and the action that emits them in the same transaction to make sure they both succeed
@@ -61,3 +62,4 @@ There is a k8 folder, I played around with Kubernetes and Skaffold to get a feel
 - [ ] Repository layer/ data layer, clearer separation of layers in the project
 - [ ] CQRS or event sourcing could be added at a later stage, will have to play around with that when the need arises, currently it's too simple of a project
 - [ ] Rename files and move interfaces around, "I" interface naming is unconventional (except in Java...). Eg model -> domain, client isn't the best name for the RabbitMQ Consumer either
+- [ ] Deployment with Kubernetes
